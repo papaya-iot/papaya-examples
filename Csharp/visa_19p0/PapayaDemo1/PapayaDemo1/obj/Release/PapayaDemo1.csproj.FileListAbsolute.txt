@@ -1,0 +1,13 @@
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\bin\Release\PapayaDemo1.exe.config
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\bin\Release\PapayaDemo1.exe
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\bin\Release\PapayaDemo1.pdb
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\bin\Release\Ivi.Visa.dll
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\bin\Release\NationalInstruments.Visa.dll
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\bin\Release\Ivi.Visa.xml
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\bin\Release\NationalInstruments.Visa.xml
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\obj\Release\PapayaDemo.Form1.resources
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\obj\Release\PapayaDemo.Properties.Resources.resources
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\obj\Release\PapayaDemo1.csproj.GenerateResource.cache
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\obj\Release\PapayaDemo1.csproj.CopyComplete
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\obj\Release\PapayaDemo1.exe
+C:\Users\koh46433\Downloads\PapayaDemo1\PapayaDemo1\obj\Release\PapayaDemo1.pdb
