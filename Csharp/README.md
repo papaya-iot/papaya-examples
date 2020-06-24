@@ -20,7 +20,7 @@ Setup VISA for C++ GUI
 __Version 13.0__
 
 _You must have this older version of NI-VISA previously installed._
-1. Locate `VisaNS.dll` and `NationalInstruments.Common.dll` from NI-VISA's installation.
+1. Locate `NationalInstruments.VisaNS.dll` and `NationalInstruments.Common.dll` from NI-VISA's installation.
 1. In Visual Studios, open the solution and revise references to point to the previously identified paths.
 2. To run the application, build the code. You can also run the PapayaDemo1 executable from the Debug folder once the references are configured correctly.
 
