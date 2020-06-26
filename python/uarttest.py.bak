@@ -22,25 +22,8 @@ ip = '192.168.2.105'
 # initiate new uart device
 pwr = uartinst.Agilent_E3631(ip)
 
-# =============================================================================
-# Both Byte Timeout(us) and Msg Timeout (ms) are related to reading from the RS232 interface. 
-# The users will need to change the default values when they are reading a large amount of data 
-# or an instrument that is slow to respond (ie slow measurement etc.). The default Msg Timeout(ms) 
-# is set to 5000ms or 5s: any read operation on the RS232 will wait for 5s for data to be 
-# available on the RxD line before it timeout and finishes. 
-# 
-# Byte Timeout(us) is related to the read duration to read data on the RxD line. When it is set 
-# to 100000us or 0.1s, the RxD line is read for 0.1s, even if all the data that has been transmitted
-# has been read before the 0.1s interval is complete. For example, 
-# if the data to be read in is not small, then the Byte Timeout(us) should be set to a small value to 
-# improve the response time. On the other hand, when reading in a large amount of data, 
-# the users will need to increase the Byte Timeout (us) to a few seconds in order to completely read 
-# in the data. Note that the Byte Timeout value also depends on the baud rate.
-# 
 # set default config: baud rate 9600, 8 numbits, no parity, 1 stopbits,
 #             msg timo 5s, byte timo 100000 us
-# =============================================================================
-
 pwr.set_config(9600, 7, 2, 1, 5000, 100000)
 time.sleep(2)   # allow time for config to process
 

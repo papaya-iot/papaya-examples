@@ -13,8 +13,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 """
 import visa
-import time
-# The uart library acts as a translates 
+
 
 class UartInstrument:
 
@@ -132,23 +131,6 @@ class UartInstrument:
             self.instr.write_raw(bytes_to_write)
         except ValueError:
             print("uart failed write bytes")
-            
-# =============================================================================
-# Both Byte Timeout(us) and Msg Timeout (ms) are related to reading from the RS232 interface. 
-# The users will need to change the default values when they are reading a large amount of data 
-# or an instrument that is slow to respond (ie slow measurement etc.). The default Msg Timeout(ms) 
-# is set to 5000ms or 5s: any read operation on the RS232 will wait for 5s for data to be 
-# available on the RxD line before it timeout and finishes. 
-# 
-# Byte Timeout(us) is related to the read duration to read data on the RxD line. When it is set 
-# to 100000us or 0.1s, the RxD line is read for 0.1s, even if all the data that has been transmitted
-# has been read before the 0.1s interval is complete. For example, 
-# if the data to be read in is not small, then the Byte Timeout(us) should be set to a small value to 
-# improve the response time. On the other hand, when reading in a large amount of data, 
-# the users will need to increase the Byte Timeout (us) to a few seconds in order to completely read 
-# in the data. Note that the Byte Timeout value also depends on the baud rate.
-# 
-# =============================================================================
 
     def set_config(self, data_rate, num_bits, parity, stop_bits, msg_timeout, byte_timeout):
         '''
@@ -218,69 +200,3 @@ class Agilent_E3631(UartInstrument):
         except ValueError:
             print('Agilent E3631 query failure')
         return float(resp)
-
-    def selectPowerSupply(self,x):
-        try:
-            #select instrument
-            # 1 is P6V, 2 is P25V and 3 is N25V
-            cmd = 'INST:NSEL ' + str(x)
-            self.write(cmd)
-        except ValueError:
-            print('Agilent E3631 selct PS fails')
-            
-    def setP6VSupply(self,x):
-        try:
-            # P6V is 1
-            self.write('INST:NSEL 1')
-            cmd = 'volt ' + str(x)
-            self.write(cmd)
-        except ValueError:
-            print('Agilent E3631 selct PS fails')
-    
-    def queryP6VSetVoltage(self):
-        try:
-            # P6V is 1
-            self.write('INST:NSEL 1')
-            time.sleep(0.3) # consecutive is too fast for uart
-            val = self.query('volt?')
-        except ValueError:
-            print('Agilent E3631 selct PS fails')
-        return float(val)
-    
-    def setP25VSupply(self,x):
-        try:
-            # P25V is 2
-            self.write('INST:NSEL 2')
-            cmd = 'volt ' + str(x)
-            self.write(cmd)
-        except ValueError:
-            print('Agilent E3631 selct PS fails')
-    
-    def queryP25VSetVoltage(self):
-        try:
-            # P6V is 1
-            self.write('INST:NSEL 2')
-            time.sleep(0.3) # consecutive is too fast for uart
-            val = self.query('volt?')
-        except ValueError:
-            print('Agilent E3631 selct PS fails')
-        return float(val)
-    
-    def setN25VSupply(self,x):
-        try:
-            # P6V is 1
-            self.write('INST:NSEL 3')
-            cmd = 'volt ' + str(x)
-            self.write(cmd)
-        except ValueError:
-            print('Agilent E3631 selct PS fails')
-    
-    def queryN25VSetVoltage(self):
-        try:
-            # P6V is 1
-            self.write('INST:NSEL 3')
-            #time.sleep(0.3) # consecutive is too fast for uart
-            val = self.query('volt?')
-        except ValueError:
-            print('Agilent E3631 selct PS fails')
-        return float(val)
