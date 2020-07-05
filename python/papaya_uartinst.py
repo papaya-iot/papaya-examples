@@ -180,7 +180,7 @@ class UartInstrument:
                          msg_timo_bytes + byt_timo_bytes
 
         try:
-            print(list(bytes_to_write))
+            #print(list(bytes_to_write))
             return self.instr.write_raw(bytes_to_write)
         except ValueError:
             print("uart device failed write")
@@ -279,7 +279,7 @@ class Agilent_E3631(UartInstrument):
         try:
             # P6V is 1
             self.write('INST:NSEL 3')
-            #time.sleep(0.3) # consecutive is too fast for uart
+            time.sleep(0.3) # consecutive is too fast for uart
             val = self.query('volt?')
         except ValueError:
             print('Agilent E3631 selct PS fails')

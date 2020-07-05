@@ -61,7 +61,14 @@ bme280 = i2cinst.BME280(conn, 0x77, 1)
 ## UART Instrument Setup
 # example class Agilent_E3631 uses UartInstrument class
 # connect to new uart device, default address 29
+
 pwr = uartinst.Agilent_E3631(papaya_ip)
+# set default config: baud rate 9600, 8 numbits, no parity, 1 stopbits,
+#             msg timo 5s, byte timo 200000 us
+pwr.set_config(9600, 7, 2, 1, 5000, 200000)
+time.sleep(2) # allow time for config to process
+pwr.write("syst:rem") # needed for inst control using 
+
 
 ## Test Loop
 start_time = time.perf_counter()

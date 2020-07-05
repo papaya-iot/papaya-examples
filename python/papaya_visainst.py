@@ -105,8 +105,30 @@ class Keysight_N9030B(VisaInstrument):
         ary = resp.split(',')
         dd =np.array([float(c) for c in ary])
         return dd   
-
-
+    def getTraceXY(self, tra='san1'):
+        flag = False
+        count = 0
+        try:
+            self.instr.write('fetch:%s?' %tra)
+            resp = self.instr.read()
+            flag = '\n' in resp
+            while (not(flag)):
+                tmp = self.instr.read()
+                #print('length %i and count %i'% (len(tmp),count))
+                resp += (tmp)
+                flag = '\n' in tmp                
+                count += 1
+        except visa.VisaIOError:
+            print('error')
+            print(tmp)
+            resp = tmp
+            traceback.print_exc()
+            sys.exit(3)
+        ary = resp.split(',')
+        dd =np.array([float(c) for c in ary])
+        #for i in range(0, len(dd))
+        return dd  
+    
 class Anritsu_M4647A(VisaInstrument): 
         
     def sweepOnce(self):
@@ -254,7 +276,69 @@ class Agilent_E3631(VisaInstrument):
         except ValueError:
             print('Agilent E3631 query failure')
         return float(resp)
+    
+    def selectPowerSupply(self,x):
+        try:
+            #select instrument
+            # 1 is P6V, 2 is P25V and 3 is N25V
+            cmd = 'INST:NSEL ' + str(x)
+            self.instr.write(cmd)
+        except ValueError:
+            print('Agilent E3631 selct PS fails')
 
+    def setP6VSupply(self,x):
+        try:
+            # P6V is 1
+            self.instr.write('INST:NSEL 1')
+            cmd = 'volt ' + str(x)
+            self.instr.write(cmd)
+        except ValueError:
+            print('Agilent E3631 selct PS fails')
+    
+    def queryP6VSetVoltage(self):
+        try:
+            # P6V is 1
+            self.instr.write('INST:NSEL 1')
+            val = self.instr.query('volt?')
+        except ValueError:
+            print('Agilent E3631 selct PS fails')
+        return float(val)
+    
+    def setP25VSupply(self,x):
+        try:
+            # P25V is 2
+            self.instr.write('INST:NSEL 2')
+            cmd = 'volt ' + str(x)
+            self.instr.write(cmd)
+        except ValueError:
+            print('Agilent E3631 selct PS fails')
+    
+    def queryP25VSetVoltage(self):
+        try:
+            # P25V is 2
+            self.instr.write('INST:NSEL 2')
+            val = self.instr.query('volt?')
+        except ValueError:
+            print('Agilent E3631 selct PS fails')
+        return float(val)
+    
+    def setN25VSupply(self,x):
+        # N25V is 3
+        try:
+            self.instr.write('INST:NSEL 3')
+            cmd = 'volt ' + str(x)
+            self.instr.write(cmd)
+        except ValueError:
+            print('Agilent E3631 selct PS fails')
+    
+    def queryN25VSetVoltage(self):
+        # N25V is 3
+        try:
+            self.instr.write('INST:NSEL 3')
+            val = self.instr.query('volt?')
+        except ValueError:
+            print('Agilent E3631 selct PS fails')
+        return float(val)
 
 class Agilent_33401(VisaInstrument):
 
@@ -717,3 +801,4 @@ class Agilent_86122A(VisaInstrument):
             print('error')
             sys.exit(3)
         return resp
+    
