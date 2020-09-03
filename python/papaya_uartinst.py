@@ -89,6 +89,30 @@ class UartInstrument:
             return data
         except ValueError:
             print("uart failed query bytes")
+            
+    def queryBytesRaw(self, command):
+        '''
+        query uart device with command string, adding newline to the end
+        :param command: (string) hex encoded command string, ex: '02c9'
+        :return: response string from device
+        '''
+        # byte[0]: 0x01 for query cmd
+        # byte[1]: length of query cmd
+        # byte[2:]: bytes of command string
+
+        cmd = bytes.fromhex(command)
+        len_cmd = len(cmd) 
+        data_bytes = cmd     # cmd bytes wo newline
+        bytes_to_write = bytes([0x01]) + len_cmd.to_bytes(2, 'little') + data_bytes
+        print(bytes_to_write, len(bytes_to_write))
+
+        try:
+            self.instr.write_raw(bytes_to_write)
+            data = self.instr.read_raw()
+            # print(data)
+            return data
+        except ValueError:
+            print("uart failed query bytes")
 
     def write(self, command):
         '''
@@ -184,6 +208,47 @@ class UartInstrument:
             return self.instr.write_raw(bytes_to_write)
         except ValueError:
             print("uart device failed write")
+
+    def get_config(self):
+        '''
+        read config from uart device
+        :return: dictionary of config values
+        '''
+        len_data = 0
+        len_data_bytes = len_data.to_bytes(2, 'little')
+        bytes_to_write = bytes([0x04]) + len_data_bytes
+
+        try:
+            self.instr.write_raw(bytes_to_write)
+            data = self.instr.read_raw()
+            # print(data)
+
+            # print(int.from_bytes(data[0:1], 'little'))  # read uart config byte
+            # print(int.from_bytes(data[1:3], 'big'))     # length of data
+
+            # bit7, bit6, bit5, bit4 | bit3, bit2, bit1 | bit0
+            # RS_CHAR_8              | RS_PARITY_NONE   | RS_STOP_1
+            config_byte = data[3]
+            numbits = ((config_byte & 0xf0) >> 4) + 5
+            parity = (config_byte & 0x06) >> 1
+            stopbits = (config_byte & 0x01)
+
+            baud = int.from_bytes(data[4:8], 'little')
+            m_timo = int.from_bytes(data[8:12], 'little')
+            b_timo = int.from_bytes(data[12:16], 'little')
+
+            config = {
+                "baud": baud,
+                "numbits": numbits,
+                "parity": parity,
+                "stopbits": stopbits,
+                "m_timo": m_timo,
+                "b_timo": b_timo
+            }
+
+            return config
+        except ValueError:
+            print("uart failed read")
 
 
 class Agilent_E3631(UartInstrument):
