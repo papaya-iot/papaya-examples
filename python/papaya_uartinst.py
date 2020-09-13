@@ -14,7 +14,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 """
 import visa
 import time
-# The uart library acts as a translates 
+
 
 class UartInstrument:
 
@@ -33,11 +33,16 @@ class UartInstrument:
         read from uart device
         :return: response string from device
         '''
-        bytes_to_write = bytes([0x01, 0])
+        # byte[0]: 0x01 for query cmd
+        # byte[1]: length of query cmd
+        # byte[2:]: bytes of command string
+        
+        len_cmd = 0
+        bytes_to_write = bytes([0x01]) + len_cmd.to_bytes(2, 'little') 
+        #print(bytes_to_write, len(bytes_to_write))
         try:
             self.instr.write_raw(bytes_to_write)
             data = self.instr.read_raw()
-            # print(data)
             return data
         except ValueError:
             print("uart failed read")
@@ -68,7 +73,7 @@ class UartInstrument:
 
     def queryBytes(self, command):
         '''
-        query uart device with command string, adding newline to the end
+        query uart device with hex coded command string, adding newline to the end
         :param command: (string) hex encoded command string, ex: '02c9'
         :return: response string from device
         '''
@@ -88,11 +93,11 @@ class UartInstrument:
             # print(data)
             return data
         except ValueError:
-            print("uart failed query bytes")
+            print("uart failed queryBytes")
             
     def queryBytesRaw(self, command):
         '''
-        query uart device with command string, adding newline to the end
+        query uart device with hex coded command string
         :param command: (string) hex encoded command string, ex: '02c9'
         :return: response string from device
         '''
@@ -104,7 +109,7 @@ class UartInstrument:
         len_cmd = len(cmd) 
         data_bytes = cmd     # cmd bytes wo newline
         bytes_to_write = bytes([0x01]) + len_cmd.to_bytes(2, 'little') + data_bytes
-        print(bytes_to_write, len(bytes_to_write))
+        #print(bytes_to_write, len(bytes_to_write))
 
         try:
             self.instr.write_raw(bytes_to_write)
@@ -112,11 +117,11 @@ class UartInstrument:
             # print(data)
             return data
         except ValueError:
-            print("uart failed query bytes")
+            print("uart failed queryBytesRaw")
 
     def write(self, command):
         '''
-        write command string to uart instrument
+        write command string to uart instrument adding newline to the end
         :param command: (str)
         :return: None
         '''
@@ -127,8 +132,7 @@ class UartInstrument:
         len_cmd = len(command) + 1
         data_bytes = command.encode('utf-8') + bytes([0x0a])
         bytes_to_write = bytes([2]) + len_cmd.to_bytes(2, 'little') + data_bytes
-        # print(f"write {hex(self.addr)} reg {hex(int_reg_addr)}: {bytes_to_write}")
-        # print(bytes_to_write)
+
 
         try:
             self.instr.write_raw(bytes_to_write)
@@ -137,7 +141,7 @@ class UartInstrument:
 
     def writeBytes(self, command):
         '''
-        write command string to uart instrument
+        write hex coded command string to uart instrument, append a newline by default
         :param command: (string) hex encoded command string, ex: '02c9'
         :return: None
         '''
@@ -149,13 +153,33 @@ class UartInstrument:
         len_cmd = len(cmd) + 1
         data_bytes = cmd + bytes([0x0a])
         bytes_to_write = bytes([2]) + len_cmd.to_bytes(2, 'little') + data_bytes
-        # print(f"write {hex(self.addr)} reg {hex(int_reg_addr)}: {bytes_to_write}")
         print(bytes_to_write)
 
         try:
             self.instr.write_raw(bytes_to_write)
         except ValueError:
-            print("uart failed write bytes")
+            print("uart failed writeBytes")
+            
+    def writeBytesRaw(self, command):
+        '''
+        write hex coded command string to uart instrument
+        :param command: (string) hex encoded command string, ex: '02c9'
+        :return: None
+        '''
+        # byte[0]: 0x02 for write cmd
+        # byte[1]: length of write cmd
+        # byte[2:]: bytes of command string
+
+        cmd = bytes.fromhex(command)
+        len_cmd = len(cmd) 
+        data_bytes = cmd     # cmd bytes wo newline
+        bytes_to_write = bytes([2]) + len_cmd.to_bytes(2, 'little') + data_bytes
+        print(bytes_to_write)
+
+        try:
+            self.instr.write_raw(bytes_to_write)
+        except ValueError:
+            print("uart failed writeBytesRaw")
             
 # =============================================================================
 # Both Byte Timeout(us) and Msg Timeout (ms) are related to reading from the RS232 interface. 

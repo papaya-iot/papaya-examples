@@ -652,6 +652,26 @@ class N9020A_SpectrumAnalyzer(VisaInstrument):
     _sweepPoints = 1001
     _startFreqMHz = 10e-3
     _stopFreqMHz = 1350
+    _traceAve = 1;
+    _contSweep=0;
+    
+    def _set_contSweep(self,x=1):
+        try:
+            cmd = ':INIT:CONT ' + str(x)
+            self.instr.write(cmd)
+        except ValueError:
+            print ('fails to set cont sweep config')
+        self._contSweep = str(x)
+    
+    def _get_contSweep(self):
+        try:
+            resp = self.instr.query(':INIT:CONT?')
+            self._contSweep=resp
+        except ValueError:
+            print ('fails to get cont sweep config')
+        return self._contSweep
+    contSweep = property(_get_contSweep, _set_contSweep,'input coupling property')
+    
     
     
     def _set_inputCoupling(self,x='DC'):
@@ -762,6 +782,26 @@ class N9020A_SpectrumAnalyzer(VisaInstrument):
     
     stopFreqMHz = property(_get_stopFreqMHz, _set_stopFreqMHz,'start frequency property')
     
+    def _set_traceAve(self,x=1):
+        try:
+            if (x >= 1):
+                cmd = 'ACP:AVER:COUN ' + str(x)
+                self.instr.write(cmd)
+            if (x == 0):
+                self.instr.write('ACPower:AVERage OFF')
+        except ValueError:
+            print ('fails to set trace average')
+        self._traceAve = int(x)
+        
+    def _get_traceAve(self):
+        try:
+            resp = self.instr.query('ACPower:AVERage:COUNt?')
+            self._traceAve = int(resp)
+        except ValueError:
+            print ('fails to get stop frequency')
+        return self._traceAve
+    traceAve = property(_get_traceAve, _set_traceAve,'trace average')
+    
     def getTrace(self):
         _points = self._get_sweepPoints()
         _stopf =self._get_stopFreqMHz()
@@ -790,7 +830,63 @@ class N9020A_SpectrumAnalyzer(VisaInstrument):
         y= np.array(y)
         return (_freq, y)
     
-
+    def setMarkerPos(self,pos=0):
+        
+         _points = self._get_sweepPoints()
+         cmd = 'calc:mark1:X:pos:cent ' + str(pos)
+         try:
+             if (pos < _points):
+                 self.instr.write(cmd)
+         except visa.VisaIOError:
+            print('write error: '+ cmd)
+        
+    def getMarkerNoise(self,pos=0):
+        #cmd = 'CALC:MARK:FUNCNOIS' 
+        try:
+            #self.instr.write(cmd)
+            self.setMarkerPos(pos)
+            val = self.instr.query('CALC:MARK:Y?')
+        except visa.VisaIOError:
+            print('getMarkerNoise error')
+        return float(val)
+    
+    def getMarkerNoiceTrace(self):
+        _points = self._get_sweepPoints()
+        _stopf =self._get_stopFreqMHz()
+        _startf =self._get_startFreqMHz()
+        _freq = np.linspace(_startf,_stopf,_points)
+        try:
+            self.instr.write('CALC:MARK:FUNCNOIS')
+            _points = self._get_sweepPoints()
+        except visa.VisaIOError:
+            print('getMarkerNoiceTrace error')
+                
+        # preallocate array
+        data = np.zeros(_points, dtype=float)
+        try:
+            for i in range(0, _points,1):
+                self.instr.write('calc:mark1:X:pos:cent %d' %i)
+                val = self.instr.query('CALC:MARK:Y?')
+                data[i] = float(val);
+        except:
+            print('getMarkerNoiceTrace error')
+        return ( _freq, data)  
+    
+    def setTraceType(self,x = 'WRITe'):
+        try:
+            cmd = 'trace1:type %s'%x
+            self.instr.write(cmd)
+        except visa.VisaIOError:
+            print('trace type error %s' %x)
+            
+    def getTraceType(self):
+        try:
+            cmd = 'trace1:type?'
+            resp = self.instr.query(cmd)
+        except visa.VisaIOError:
+            print('trace type query error')
+        return resp
+                
 class Agilent_86122A(VisaInstrument):
     
     def getFreq(self):
@@ -799,6 +895,113 @@ class Agilent_86122A(VisaInstrument):
             resp = float(self.instr.read())
         except visa.VisaIOError:
             print('error')
-            sys.exit(3)
         return resp
+
+    def getMultipleFreq(self):
+        try:
+            self.instr.write(':MEAS:ARR:POW:FREQ?')
+            resp = self.instr.read()
+        except visa.VisaIOError:
+            print('error')
+        return resp
+
+class Agilent_N5183B(VisaInstrument):
     
+    def _get_outPutOnOff(self):
+        try:
+            resp = self.instr.query(':outp?')
+            self._outputOnOff = resp
+        except ValueError:
+            print('Agilent_N5183B query fails')
+        return self._outputOnOff
+  
+    def _set_outPutOnOff(self, x):
+        try:
+            cmd = 'outp ' + str(x)
+            self.instr.write(cmd)
+        except ValueError:
+            print('Agilent_N5183B write fails')
+        self._outputOnOff = x
+      
+    outputOnOff = property(_get_outPutOnOff, _set_outPutOnOff, "outputOnOff property")
+    
+    def setFreq(self, freq_Hz = 1000000):
+        try:
+           cmd = ':freq ' + str(freq_Hz)
+           self.instr.write(cmd)
+        except ValueError:
+            print('Agilent_N5183B write fails')
+        
+    def getFreq(self):
+        try:
+            resp = self.instr.query(':outp?')
+        except ValueError:
+            print('Agilent_N5183B write fails')
+        return float(resp)
+    
+    def setPowerLevel(self,pow_dBm=-20.0):
+        try:
+            cmd = ':pow:lev %d'%pow_dBm
+            self.instr.write(cmd)
+        except ValueError:
+            print('Agilent_N5183B write fails')
+            
+    def getPowerLevel(self):
+        try:
+            cmd = ':pow:lev?'
+            resp = self.instr.query(cmd)
+        except ValueError:
+            print('Agilent_N5183B query fails')      
+        return float(resp)
+    
+    
+class SRS(VisaInstrument): 
+    _pidPolarity= 0
+    _pidLoop = 0
+    
+    def PIDConnect(self):
+        try:
+            self.instr.write('CONN 7, \"ZZZ\"');
+            time.sleep(1)
+        except ValueError:
+            print('SRS Connect fails') 
+        
+    def PIDDiscoonect(self):
+        try:
+            self.instr.write('\"ZZZ\"');
+        except ValueError:
+            print('SRS Disconnect fails')
+        
+    def _PIDPolaritySet(self, pol=0):
+        try:
+            self.instr.write('APOL %d'%int(pol))
+        except ValueError:
+            print('SRS APOL set fails')
+        self.instr._pidPolarity=int(pol)
+            
+    def _PIDPolarityGet(self):
+        try:
+            resp = self.instr.query('APOL?')
+        except ValueError:
+            print('SRS APOL set fails')
+        self._pidPolarity = int(resp)
+        return self._pidPolarity
+    
+    PIDPolarity = property(_PIDPolarityGet, _PIDPolaritySet,'PID Polarity')
+    
+    def _setPIDLoop(self,loop=0):
+        try:
+            self.instr.write('AMAN %d'%int(loop))
+        except ValueError:
+            print('SRS AMAN set fails')
+        self._pidLoop = int(loop)
+    
+    def _getPIDLoop(self):
+        try:
+            resp = self.instr.query('AMAN?')
+        except ValueError:
+            print('SRS AMAN get fails')
+        self._pidLoop = int(resp)
+        return self._pidLoop
+    
+    PIDLoop = property(_getPIDLoop, _setPIDLoop,'PID Loop on/off')
