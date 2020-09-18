@@ -153,7 +153,7 @@ class UartInstrument:
         len_cmd = len(cmd) + 1
         data_bytes = cmd + bytes([0x0a])
         bytes_to_write = bytes([2]) + len_cmd.to_bytes(2, 'little') + data_bytes
-        print(bytes_to_write)
+        #print(bytes_to_write)
 
         try:
             self.instr.write_raw(bytes_to_write)
