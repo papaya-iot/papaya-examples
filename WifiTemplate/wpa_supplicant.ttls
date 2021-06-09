@@ -1,0 +1,17 @@
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=US
+
+network={
+     key_mgmt=WPA-EAP
+     eap=TTLS     
+     # Phase1 / outer authentication
+     anonymous_identity=""
+     ca_cert="/etc/ca-certificates/update.d/"     
+     # Phase 2 / inner authentication via user certificate
+     phase2="autheap=TLS"
+     ca_cert2="/etc/ca-certificates/update.d/"
+     client_cert2="/etc/ca-certificates/update.d/"
+     private_key2="/etc/ca-certificates/update.d/"
+     private_key2_passwd=""
+}

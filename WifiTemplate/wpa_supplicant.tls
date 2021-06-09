@@ -1,0 +1,13 @@
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=US
+
+network={
+     key_mgmt=WPA-EAP
+     eap=TLS
+     identity=""
+     ca_cert="/etc/ca-certificates/update.d/"
+     client_cert="/etc/ca-certificates/update.d/"
+     private_key="/etc/ca-certificates/update.d/"
+     private_key_passwd=""
+}
