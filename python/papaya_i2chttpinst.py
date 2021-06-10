@@ -15,6 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 import requests
 import binascii
+from codecs import getencoder
 import time
 
 
@@ -28,10 +29,10 @@ def enforce_hex(addr):
 
 
 def scanI2c(ip):
-    '''
+    """
     scans devices on i2c bus
-    :return: comma separated string of hex string addresses present on i2c bus
-    '''
+        :return: list of hex string addresses present on i2c bus
+    """
     try:
         req_url = 'http://' + ip + '/i2c/scan'
         resp = requests.get(url=req_url)
@@ -48,12 +49,12 @@ class I2cHttpDevice:
         self.dev_addr = enforce_hex(dev_addr)
 
     def read(self, reg_addr, len_read):
-        '''
+        """
         read len_read bytes starting from register reg_addr
         :param reg_addr: (str) register address to read in hex
         :param len_read: (int) number of bytes to read
         :return: bytestring of data
-        '''
+        """
         assert len_read < 256, "num of bytes to read cannot exceed 255"
 
         hex_reg_addr = enforce_hex(reg_addr)
@@ -66,14 +67,18 @@ class I2cHttpDevice:
             print("i2c failed read")
 
     def write(self, reg_addr, data, len_data=0):
-        '''
+        """
         :param reg_addr: (str) register address to write to in hex
-        :param data: (str) hex-encoded bytes, ie: '014ce8'
+        :param data: (str or bytes) hex-encoded bytes, ie: '014ce8'
         :param len_data: (optional int) dummy variable to support code portability
         :return: None
-        '''
+        """
 
         hex_reg_addr = enforce_hex(reg_addr)
+        if type(data) == bytes:
+            # to work across python 2+3:
+            # https://izziswift.com/whats-the-correct-way-to-convert-bytes-to-a-hex-string-in-python-3/
+            data = getencoder('hex')(data)[0].decode('ascii')
 
         try:
             req_url = '%swrite/%s/%s/%s' % (self.url, self.dev_addr, hex_reg_addr, data)
@@ -81,11 +86,16 @@ class I2cHttpDevice:
         except ValueError:
             print("i2c device 0x%s failed write" % self.dev_addr)
 
-# use "{:02x}".format(<integer to convert>) to format numerical values to send as hex
 
-# example i2c instrument class
-# adapted from BME280.py, http://abyz.me.uk/rpi/pigpio/examples.html (2016-08-05)
 class BME280(I2cHttpDevice):
+    """
+    Bosch BME280
+    https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf
+
+    code adapted from BME280.py, http://abyz.me.uk/rpi/pigpio/examples.html (2016-08-05)
+    This example shows that porting the original code to use the Wifi
+    Papaya Controller is straightforward and minimal
+    """
 
     _calib00 = 0x88
 
@@ -154,7 +164,7 @@ class BME280(I2cHttpDevice):
         return v
 
     def _u16(self, _calib, off):
-        return (_calib[off] | (_calib[off + 1] << 8))
+        return _calib[off] | (_calib[off + 1] << 8)
 
     def _u8(self, _calib, off):
         return _calib[off]
@@ -169,7 +179,7 @@ class BME280(I2cHttpDevice):
         ms = ((1.25 + 2.3 * self._os_ms[os_temp]) +
               (0.575 + 2.3 * self._os_ms[os_press]) +
               (0.575 + 2.3 * self._os_ms[os_hum]))
-        return (ms / 1000.0)
+        return ms / 1000.0
 
     def _load_calibration(self):
 
@@ -178,10 +188,6 @@ class BME280(I2cHttpDevice):
         self.T1 = self._u16(d1, self._T1)
         self.T2 = self._s16(d1, self._T2)
         self.T3 = self._s16(d1, self._T3)
-        # print format(self._u8(d1,self._T1),'02x')
-
-        # for index in range(len(d1)):
-        #     print(index, format(d1[index], '02x'))
 
         self.P1 = self._u16(d1, self._P1)
         self.P2 = self._s16(d1, self._P2)
@@ -220,8 +226,8 @@ class BME280(I2cHttpDevice):
 
     def _read_raw_data(self):
         # write control bytes for oversampling config
-        self.write(self._ctrl_hum, "{:02x}".format(self.sampling))
-        self.write(self._ctrl_meas, "{:02x}".format(self.sampling << 5 | self.sampling << 2 | 1))
+        self.write(self._ctrl_hum, bytes([self.sampling]), 1)
+        self.write(self._ctrl_meas, bytes([self.sampling << 5 | self.sampling << 2 | 1]), 1)
         time.sleep(self.measure_delay)
 
         # read 8 bytes starting from register self._rawdata

@@ -17,7 +17,7 @@ import papaya_uartinst as uartinst
 import papaya_uarthttpinst as uarthttp
 import time
 
-ip = '192.168.2.105'
+ip = '192.168.2.211'
 
 # initiate new uart device
 pwr = uartinst.Agilent_E3631(ip)
@@ -69,7 +69,7 @@ pwr.close()
 pwr_http = uarthttp.Agilent_E3631(ip)
 pwr_http.set_config(9600, 7, 2, 1, 5000, 100000)
 print('uart config: ', pwr_http.get_config())
-time.sleep(1) # allow time for config to process
+time.sleep(1)  # allow time for config to process
 
 # set to remote mode, cmd syst:rem
 pwr_http.writeBytes('737973743a72656d')   # using bytes

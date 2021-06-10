@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 import pyvisa as visa
 import time
-import sys,traceback
+import sys, traceback
 import re as regex
 import numpy as np
 
@@ -45,7 +45,7 @@ class VisaInstrument:
         except ValueError:
             print ('*ESE write fails')
             
-    def _get_ESE(self,x):
+    def _get_ESE(self, x):
         try:
             resp = self.instr.query('*ESE?')
             self._output = float(resp)
@@ -62,7 +62,7 @@ class VisaInstrument:
         except ValueError:
             print ('*SRE write fails')
             
-    def _get_SRE(self,x):
+    def _get_SRE(self, x):
         try:
             resp = self.instr.query('*SRE?')
             self._output = float(resp)
@@ -81,92 +81,79 @@ class VisaInstrument:
              
 
 class Keysight_N9030B(VisaInstrument):
-        
-    def getTrace(self,tra='TRACE1'):
-        flag = False
+
+    def getTrace(self, tra='TRACE1'):
         count = 0
         try:
             self.instr.write('trac:data? %s' %tra)
             resp = self.instr.read()
             flag = '\n' in resp
-            while (not(flag)):
+            while not flag:
                 tmp = self.instr.read()
-                #print('length %i and count %i'% (len(tmp),count))
-                resp += (tmp)
+                resp += tmp
                 flag = '\n' in tmp                
                 count += 1
         except visa.VisaIOError:
-            print('error')
+            print('error getting trace')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
             sys.exit(3)
             
         ary = resp.split(',')
-        dd =np.array([float(c) for c in ary])
-        return dd   
+        dd = np.array([float(c) for c in ary])
+        return dd
+
     def getTraceXY(self, tra='san1'):
-        flag = False
         count = 0
         try:
             self.instr.write('fetch:%s?' %tra)
             resp = self.instr.read()
             flag = '\n' in resp
-            while (not(flag)):
+            while not flag:
                 tmp = self.instr.read()
-                #print('length %i and count %i'% (len(tmp),count))
-                resp += (tmp)
+                resp += tmp
                 flag = '\n' in tmp                
                 count += 1
         except visa.VisaIOError:
-            print('error')
+            print('error getting xy trace')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
             sys.exit(3)
         ary = resp.split(',')
-        dd =np.array([float(c) for c in ary])
-        #for i in range(0, len(dd))
+        dd = np.array([float(c) for c in ary])
         return dd  
-    
+
+
 class Anritsu_M4647A(VisaInstrument): 
         
     def sweepOnce(self):
         self.instr.write('TRS;WFS;HLD')
         time.sleep(11)
     
-    def readSXX(self,fmt='OS11C'):
-        #fmt: OS11C, OS11R,OS12C, OS12R, OS21C, OS21R, OS22C, OS22R
-        
-        #self.instr.write(':calc1:form:s1p:port port1')
-        #set to real imag
-        #self.instr.write(':calc1:form %s'%fmt)
-        #self.instr.write('OFD')
-        #:sens1:freq:data?
+    def readSXX(self, fmt='OS11C'):
         try:
-            self.instr.write(fmt) # C here refers to calibrated
+            self.instr.write(fmt)  # C here refers to calibrated
             resp = self.instr.read()
-            s = regex.findall(r'^#\d+',resp)[0] # get the first elment in string instead of list
+            s = regex.findall(r'^#\d+', resp)[0]  # get the first elm in string instead of list
             pos = int(s[1]) + 3
-            _num =int(s[2:len(s)])  # total number of bytes to read
-            resp = resp[pos:len(resp)] # remove the header
+            _num = int(s[2:len(s)])  # total number of bytes to read
+            resp = resp[pos:len(resp)]  # remove the header
             cnt = len(resp)
-            while (cnt < _num):
+            while cnt < _num:
                 tmp = self.instr.read()
                 cnt += len(tmp)
                 resp += tmp
-                #print (cnt)
         except visa.VisaIOError:
             traceback.print_exc()
             sys.exit(3)
-            
+
         # make them into real numbers
         y = resp.split('\n')
-        y = y[0:len(y)-1] # last element is \n
-        real =np.zeros(len(y),dtype=float)
-        imag = np.zeros(len(y),dtype=float)
-        for i_ in range(0,len(y)):
-            valstr = y[i_].split(',') # split into real and imag
+        y = y[0:len(y)-1]  # last element is \n
+        real = np.zeros(len(y), dtype=float)
+        imag = np.zeros(len(y), dtype=float)
+        for i_ in range(0, len(y)):
+            valstr = y[i_].split(',')  # split into real and imag
             real[i_] = float(valstr[0])
             imag[i_] = float(valstr[1])
             
@@ -178,12 +165,12 @@ class Anritsu_M4647A(VisaInstrument):
         try:
             self.instr.write(':sens1:freq:data?')
             resp = self.instr.read()
-            s = regex.findall(r'^#\d+',resp)[0] # get the first elment in string instead of list
+            s = regex.findall(r'^#\d+', resp)[0]  # get the first elm in string instead of list
             pos = int(s[1]) + 3
-            _num =int(s[2:len(s)])  # total number of bytes to read
-            resp = resp[pos:len(resp)] # remove the header
+            _num = int(s[2:len(s)])  # total number of bytes to read
+            resp = resp[pos:len(resp)]  # remove the header
             cnt = len(resp)
-            while (cnt < _num):
+            while cnt < _num:
                 tmp = self.instr.read()
                 cnt += len(tmp)
                 resp += tmp
@@ -192,23 +179,24 @@ class Anritsu_M4647A(VisaInstrument):
             sys.exit(3)
             
         y = resp.split('\n')
-        y = y[0:len(y)-1] # last element is \n
+        y = y[0:len(y)-1]  # last element is \n
         val = np.array([float(c) for c in y])
         return val
-        
+
+
 class Keithley_2400(VisaInstrument):
            
-    def sourcetype(self,type):
+    def sourcetype(self, type):
         if type == 'voltage':            
             self.instr.write(':SOUR:FUNC VOLT')
-            self.instr.write(':SENS:FUNC "CURR"') # Sensing current
+            self.instr.write(':SENS:FUNC "CURR"')
         elif type == 'current':
             self.instr.write(':SOUR:FUNC CURR')
-            self.instr.write(':SENS:FUNC "VOLT"') # Sensing current                 
+            self.instr.write(':SENS:FUNC "VOLT"')
         
-    def setvoltage(self,vb,curlimit=0.05):
-        self.instr.write(':SENS:CURR:PROT %f'%curlimit) # Set compliance current to 40 mA
-        self.instr.write(':SOUR:VOLT:LEV %f'%vb)        
+    def setvoltage(self, vb, curlimit=0.05):
+        self.instr.write(':SENS:CURR:PROT %f' % curlimit)
+        self.instr.write(':SOUR:VOLT:LEV %f' % vb)
     
     def querycurrent(self):
         try:
@@ -216,14 +204,14 @@ class Keithley_2400(VisaInstrument):
             cur = self.instr.query('READ?')
             c = float(cur)
         except ValueError:
-            print('warning: current reading error...')
+            print('Keithley 2400 warning: current reading error...')
             print(cur)
             c = -1000        
         return float(c)
     
-    def setcurrent(self,cur,vlimit=2):
-        self.instr.write(':SENS:VOLT:PROT %f'%vlimit)
-        self.instr.write(':SOUR:CURR:LEV %s'%cur)
+    def setcurrent(self, cur, vlimit=2):
+        self.instr.write(':SENS:VOLT:PROT %f' % vlimit)
+        self.instr.write(':SOUR:CURR:LEV %s' % cur)
         
     def _get_output(self):
         try:
@@ -250,7 +238,7 @@ class Agilent_E3631(VisaInstrument):
             resp = self.instr.query(':outp?')
             self._outputOnOff = resp
         except ValueError:
-            print('Agilent E3631 query fails')
+            print('Agilent E3631 query outp fails')
         return self._outputOnOff
   
     def _set_outPutOnOff(self, x):
@@ -258,7 +246,7 @@ class Agilent_E3631(VisaInstrument):
             cmd = 'outp ' + str(x)
             self.instr.write(cmd)
         except ValueError:
-            print('Agilent E3631 write fails')
+            print('Agilent E3631 write outp fails')
         self._outputOnOff = x
       
     outputOnOff = property(_get_outPutOnOff, _set_outPutOnOff, "outputOnOff property")
@@ -267,33 +255,36 @@ class Agilent_E3631(VisaInstrument):
         try:
             resp=self.instr.query(':meas:curr:dc?')
         except ValueError:
-            print('Agilent E3631 query failure')
+            print('Agilent E3631 query current fails')
         return float(resp)
     
     def queryVoltage(self):
         try:
             resp=self.instr.query(':meas:volt:dc?')
         except ValueError:
-            print('Agilent E3631 query failure')
+            print('Agilent E3631 query voltage fails')
         return float(resp)
     
-    def selectPowerSupply(self,x):
+    def selectPowerSupply(self, x):
+        '''
+        select power supply instrument,
+        :param x: (int) 1 is P6V, 2 is P25V and 3 is N25V
+        :return: none
+        '''
         try:
-            #select instrument
-            # 1 is P6V, 2 is P25V and 3 is N25V
             cmd = 'INST:NSEL ' + str(x)
             self.instr.write(cmd)
         except ValueError:
-            print('Agilent E3631 selct PS fails')
+            print('Agilent E3631 select power supply fails')
 
-    def setP6VSupply(self,x):
+    def setP6VSupply(self, x):
         try:
             # P6V is 1
             self.instr.write('INST:NSEL 1')
             cmd = 'volt ' + str(x)
             self.instr.write(cmd)
         except ValueError:
-            print('Agilent E3631 selct PS fails')
+            print('Agilent E3631 set P6V fails')
     
     def queryP6VSetVoltage(self):
         try:
@@ -301,7 +292,7 @@ class Agilent_E3631(VisaInstrument):
             self.instr.write('INST:NSEL 1')
             val = self.instr.query('volt?')
         except ValueError:
-            print('Agilent E3631 selct PS fails')
+            print('Agilent E3631 query P6V fails')
         return float(val)
     
     def setP25VSupply(self,x):
@@ -311,7 +302,7 @@ class Agilent_E3631(VisaInstrument):
             cmd = 'volt ' + str(x)
             self.instr.write(cmd)
         except ValueError:
-            print('Agilent E3631 selct PS fails')
+            print('Agilent E3631 set P25V fails')
     
     def queryP25VSetVoltage(self):
         try:
@@ -319,17 +310,17 @@ class Agilent_E3631(VisaInstrument):
             self.instr.write('INST:NSEL 2')
             val = self.instr.query('volt?')
         except ValueError:
-            print('Agilent E3631 selct PS fails')
+            print('Agilent E3631 query P25V fails')
         return float(val)
     
-    def setN25VSupply(self,x):
+    def setN25VSupply(self, x):
         # N25V is 3
         try:
             self.instr.write('INST:NSEL 3')
             cmd = 'volt ' + str(x)
             self.instr.write(cmd)
         except ValueError:
-            print('Agilent E3631 selct PS fails')
+            print('Agilent E3631 set N25V fails')
     
     def queryN25VSetVoltage(self):
         # N25V is 3
@@ -337,8 +328,9 @@ class Agilent_E3631(VisaInstrument):
             self.instr.write('INST:NSEL 3')
             val = self.instr.query('volt?')
         except ValueError:
-            print('Agilent E3631 selct PS fails')
+            print('Agilent E3631 query N25V fails')
         return float(val)
+
 
 class Agilent_33401(VisaInstrument):
 
@@ -346,34 +338,34 @@ class Agilent_33401(VisaInstrument):
         try:
             self.instr.write(':meas:volt:ac?')
             resp = self.instr.read()
+            return float(resp)
         except ValueError:
-            print('Agilent 33401 fails query')
-        return float(resp)   
-    
+            print('Agilent 33401 query ac volt fails')
+
     def acCurrent(self):
         try:
             self.instr.write(':meas:curr:ac?')
             resp = self.instr.read()
+            return float(resp)
         except ValueError:
-            print('Agilent 33401 fails query')
-        return float(resp)
-    
+            print('Agilent 33401 query ac curr fails')
+
     def dcVoltage(self):
         try:
             self.instr.write(':meas:volt:dc?')
             resp = self.instr.read()
+            return float(resp)
         except ValueError:
-            print('Agilent 33401 fails query')
-        return float(resp)   
-    
+            print('Agilent 33401 query dc volt fails')
+
     def dcCurrent(self):
         try:
             self.instr.write(':meas:curr:dc?')
             resp = self.instr.read()
+            return float(resp)
         except ValueError:
-            print('Agilent 33401 fails query')
-        return float(resp)
-    
+            print('Agilent 33401 query dc curr fails')
+
     
 class Keithley_2510(VisaInstrument):
 
@@ -383,21 +375,20 @@ class Keithley_2510(VisaInstrument):
             temp = self.instr.read()
             t = float(temp)
         except ValueError:
-            print('warning: temp read error...')
+            print('Keithley 2510 warning: temp read error...')
             print(temp)
             t = -1000
         return float(t)    
     
-    def settemp(self,setT='25'):
-        self.instr.write(':SOUR:TEMP %f'%setT)
+    def settemp(self, setT='25'):
+        self.instr.write(':SOUR:TEMP %f' % setT)
         
     def _get_output(self):
         try:
-            
             resp = self.instr.query(':OUTPUT?')
             self._output = float(resp)
         except ValueError:
-            print('Keithley 2510 query fails')
+            print('Keithley 2510 query outp fails')
         return self._output
         
     def _set_output(self, x):
@@ -405,7 +396,7 @@ class Keithley_2510(VisaInstrument):
             cmd = ':OUTPUT  ' + str(x)
             self.instr.write(cmd)
         except ValueError:
-            print('Keithley 2510 write fails')
+            print('Keithley 2510 write outp fails')
         self._output = x
         
     output = property(_get_output, _set_output, "output property")
@@ -418,68 +409,81 @@ class Newport_3150(VisaInstrument):
         try:
             t = float(temp)
         except ValueError:
-            print('warning: temp read error...')
+            print('Newport 3150 warning: temp read error...')
             print(temp)
             t = -1000
         return float(t)    
     
-    def settemp(self,setT='25'):
-        self.instr.write(':TEC:T %f'%setT)
-    
+    def settemp(self, setT='25'):
+        self.instr.write(':TEC:T %f' % setT)
 
-class powermeter(VisaInstrument):
+
+class Agilent_8163(VisaInstrument):
     
     def queryIDN(self):
         try:
             resp = self.instr.query('*IDN?')
         except ValueError:
-            print('Agilent 86163 fails query')
+            print('Agilent 8163 fails query')
         return resp
     
     def querypower(self):
-        opt = self.instr.query('READ:POW?')        
+        try:
+            opt = self.instr.query('READ:POW?')
+        except ValueError:
+            print('Agilent 8163 fails query')
         return float(opt)
-    
-class dca(VisaInstrument):
 
-    def initialize(self): # initiallize for PAM4 measurement
+
+class Keysight_Dca(VisaInstrument):
+
+    def initialize(self):  # initiallize for PAM4 measurement
         pass
     
-    def getER(self,source='1',ch='2A'):
+    def get_er(self, source='1', ch='2A'):
         cmd = ':MEASure:EYE:OER:SOURce'+source+' CHAN'+ch
         self.instr.write(cmd)
-        er = self.instr.query(':MEASure:EYE:OER?')
-        return float(er)
+        try:
+            er = self.instr.query(':MEASure:EYE:OER?')
+            return float(er)
+        except ValueError:
+            print('Keysight dca error')
     
-    def getOMA(self,source='1',ch='2A'):
+    def getOMA(self, source='1', ch='2A'):
         cmd = ':MEASure:EYE:OOMA:SOURce'+source+' CHAN'+ch
         self.instr.write(cmd)
-        oma = self.instr.query(':MEASure:EYE:OOMA?')
-        return float(oma)
+        try:
+            oma = self.instr.query(':MEASure:EYE:OOMA?')
+            return float(oma)
+        except ValueError:
+            print('Keysight dca error')
     
-    def getRLM(self,source='1',ch='2A'):
+    def getRLM(self, source='1', ch='2A'):
         cmd = ':MEASure:EYE:PAM:LINearity:SOURce'+source+' CHAN'+ch
         self.instr.write(cmd)
-        RLM = self.instr.query(':MEASure:EYE:PAM:LINearity?')
-        return float(RLM)
-    
-#    def getTDEDQ(self):
-#        return self.instr.query()
+        try:
+            rlm = self.instr.query(':MEASure:EYE:PAM:LINearity?')
+            return float(rlm)
+        except ValueError:
+            print('Keysight dca error')
     
     def autoscale(self):
         self.instr.write(':SYSTem:AUToscale')
-        self.instr.ask('*OPC?')
+        try:
+            self.instr.query('*OPC?')
+        except ValueError:
+            print('Keysight dca error')
     
     def clear(self):
         self.instr.write(':ACQuire:CDISplay')
-        self.instr.ask('*OPC?')
+        try:
+            self.instr.query('*OPC?')
+        except ValueError:
+            print('Keysight dca error')
     
     def run(self):
-        self.instr.write(':ACQuire:RUN')    
-#    def savejpg(self,ch='2A',fname='',path='')
-#        cmd = ':DISPlay:WINDow:TIME1:ZSIGnal CHAN'+ch
-#        self.instr.write(cmd)
-#        self.
+        self.instr.write(':ACQuire:RUN')
+
 
 class Agilent_86142(VisaInstrument):
 
@@ -495,10 +499,10 @@ class Agilent_86142(VisaInstrument):
         try:
             cmd = ':sens:wav:star ' + str(x)
             self.instr.write(cmd)
-        except ValueError:
+            self._startWavelength = x
+        except visa.VisaIOError:
             print('Agilent 86142 write fails')
-        self._startWavelength = x
-      
+
     startWavelength = property(_get_startWavelength, _set_startWavelength, "startWavelength property")
     
     def _get_stopWavelength(self):
@@ -513,10 +517,10 @@ class Agilent_86142(VisaInstrument):
         try:
             cmd = ':sens:wav:stop ' + str(x)
             self.instr.write(cmd)
-        except ValueError:
+            self._stopWavelength = x
+        except visa.VisaIOError:
             print('Agilent 86142 write fails')
-        self._stopWavelength = x
-      
+
     stopWavelength = property(_get_stopWavelength, _set_stopWavelength, "stopWavelength property")
   
     def _get_traceLength(self):
@@ -531,41 +535,33 @@ class Agilent_86142(VisaInstrument):
         try:
             cmd = ':SENS:SWE:POIN  ' + str(x)
             self.instr.write(cmd)
+            self._traceLength = x
         except ValueError:
             print('Agilent 86142 write fails')
-        self._traceLength = x
-      
+
     traceLength = property(_get_traceLength, _set_traceLength, "traceLength property")
-    
  
     def getTrace(self):
         tmp = ''
-        elmcount = []
         try:
             self.instr.write('form ascii')
             self.instr.write('trac? tra')
             resp = self.instr.read()
             flag = '\n' in resp
             count = 0
-            while (not(flag)):
-                #time.sleep(0.1)
+            while not flag:
                 tmp = self.instr.read()
-                #elmcount.append(len(tmp.split(',')))
-                #print('length %i and count %i'% (len(tmp),count))
-                resp += (tmp)
+                resp += tmp
                 flag = '\n' in tmp
                 count += 1
-                #print (elmcount)
-            #print (count)
         except visa.VisaIOError:
             print('error')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
             sys.exit(3)
         return resp
     
-    def getTrace1(self,pts):
+    def getTrace1(self, pts):
         tmp = ''
         elmcount = []
         count = 0
@@ -574,24 +570,16 @@ class Agilent_86142(VisaInstrument):
             self.instr.write('form ascii')
             self.instr.write('trac? tra')
             resp = self.instr.read()
-            #print('resp', len(resp), resp)
-            flag = '\n' in resp
             count += len(resp.split(','))
-            while (count < pts): #(not(flag)):
-                #time.sleep(0.1)
+            while count < pts:
                 tmp = self.instr.read()
                 count += len(tmp.split(','))
                 elmcount.append(count)
-                #print('length %i and count %i'% (len(tmp),count))
-                resp += (tmp)
-                flag = '\n' in tmp
-                print(flag)
-                itr +=1
-            #print (count)
+                resp += tmp
+                itr += 1
         except visa.VisaIOError:
             print('error')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
             sys.exit(3)
         return resp
@@ -601,10 +589,11 @@ class Agilent_86142(VisaInstrument):
             self.instr.write('form real32')
             self.instr.write('trac? tra')
             resp = self.instr.read()
+            return resp
         except ValueError:
             print('Agilent 86142 write fails')
-        return resp
-        
+
+
 class JDSU_HA9(VisaInstrument):
     _attenuation = 0
     _beamIsBlocked = 0
@@ -621,10 +610,10 @@ class JDSU_HA9(VisaInstrument):
         try:
             cmd = 'att ' + str(x)
             self.instr.write(cmd)
+            self._attenuation = x
         except ValueError:
             print('JDSU HA9 write fails')
-        self._attenuation = x
-      
+
     attenuation = property(_get_attenuation, _set_attenuation, "attenuation property")
     
     def _get_beamIsBlocked(self):
@@ -639,11 +628,12 @@ class JDSU_HA9(VisaInstrument):
         try:
             cmd = 'D ' + str(int(x))
             self.instr.write(cmd)
+            self._beamIsBlocked = int(x)
         except ValueError:
             print('JDSU HA9 write fails')
-        self._beamIsBlocked = int(x)
-      
+
     beamIsBlocked = property(_get_beamIsBlocked, _set_beamIsBlocked, "beamIsBlock property")
+
 
 class N9020A_SpectrumAnalyzer(VisaInstrument):
     _inputCoupling = 'DC'  # default
@@ -652,161 +642,159 @@ class N9020A_SpectrumAnalyzer(VisaInstrument):
     _sweepPoints = 1001
     _startFreqMHz = 10e-3
     _stopFreqMHz = 1350
-    _traceAve = 1;
-    _contSweep=0;
+    _traceAve = 1
+    _contSweep = 0
     
-    def _set_contSweep(self,x=1):
+    def _set_contSweep(self, x=1):
         try:
             cmd = ':INIT:CONT ' + str(x)
             self.instr.write(cmd)
+            self._contSweep = str(x)
         except ValueError:
-            print ('fails to set cont sweep config')
-        self._contSweep = str(x)
-    
+            print('N9020A fails to set cont sweep config')
+
     def _get_contSweep(self):
         try:
             resp = self.instr.query(':INIT:CONT?')
             self._contSweep=resp
         except ValueError:
-            print ('fails to get cont sweep config')
+            print('N9020A fails to get cont sweep config')
         return self._contSweep
-    contSweep = property(_get_contSweep, _set_contSweep,'input coupling property')
+    contSweep = property(_get_contSweep, _set_contSweep, 'input coupling property')
     
-    
-    
-    def _set_inputCoupling(self,x='DC'):
+    def _set_inputCoupling(self, x='DC'):
         try:
             cmd = 'INPut:COUPling ' + str(x)
             self.instr.write(cmd)
+            self._inputCoupling = str(x)
         except ValueError:
-            print ('fails to set input coupling')
-        self._inputCoupling = str(x)
-        
+            print('N9020A fails to set input coupling')
+
     def _get_inputCoupling(self):
         try:
             resp = self.instr.query('INP:COUP?')
-            self._inputCoupling =resp
+            self._inputCoupling = resp
         except ValueError:
-            print ('fails to get input coupling')
+            print('N9020A fails to get input coupling')
         return self._inputCoupling
-    inputCoupling = property(_get_inputCoupling, _set_inputCoupling,'input coupling property')
+    inputCoupling = property(_get_inputCoupling, _set_inputCoupling, 'input coupling property')
     
     def _set_bandwidthResolution_MHz(self,x=0.5):
         try:
             cmd = 'BANDWIDTH:RESOLUTION ' + str(x) + ' MHZ'
             self.instr.write(cmd)
+            self._bandwidthResolution_MHz = float(x)
         except ValueError:
-            print ('fails to set bandwidth resolution')
-        self._bandwidthResolution_MHz = float(x)
-        
+            print('N9020A fails to set bandwidth resolution')
+
     def _get_bandwidthResolution_MHz(self):
         try:
             resp = self.instr.query('BANDWIDTH:RESOLUTION?')
-            self._bandwidthResolution_MHz = float(resp)/1e6 # in MHz
+            self._bandwidthResolution_MHz = float(resp)/1e6  # in MHz
         except ValueError:
-            print ('fails to get bandwidth resolution')
+            print('N9020A fails to get bandwidth resolution')
         return self._bandwidthResolution_MHz
     
-    resolutionBW_MHz = property(_get_bandwidthResolution_MHz, _set_bandwidthResolution_MHz,'bandwidth resolution property')
+    resolutionBW_MHz = property(_get_bandwidthResolution_MHz, _set_bandwidthResolution_MHz, 'bandwidth resolution property')
     
-    def _set_bandwidthVideo_MHz(self,x=0.5):
+    def _set_bandwidthVideo_MHz(self, x=0.5):
         try:
             cmd = 'BANDWIDTH:VIDEO ' + str(x) + ' MHZ'
             self.instr.write(cmd)
+            self._bandwidthResolution_MHz = float(x)
         except ValueError:
-            print ('fails to set video bandwidth')
-        self._bandwidthResolution_MHz = float(x)
-        
+            print('N9020A fails to set video bandwidth')
+
     def _get_bandwidthVideo_MHz(self):
         try:
             resp = self.instr.query('BANDWIDTH:VIDEO?')
-            self._bandwidthResolution_MHz = float(resp)/1e6 # in MHz
+            self._bandwidthResolution_MHz = float(resp)/1e6  # in MHz
         except ValueError:
-            print ('fails to get video bandwidth')
+            print('N9020A fails to get video bandwidth')
         return self._bandwidthResolution_MHz
     
-    videoBW_MHz = property(_get_bandwidthVideo_MHz, _set_bandwidthVideo_MHz,'video bandwidth property')
+    videoBW_MHz = property(_get_bandwidthVideo_MHz, _set_bandwidthVideo_MHz, 'video bandwidth property')
     
     def _set_sweepPoints(self,x=1001):
         try:
             cmd = 'SWEEP:POINTS ' + str(x)
             self.instr.write(cmd)
+            self._sweepPoints = int(x)
         except ValueError:
-            print ('fails to set sweep points')
-        self._sweepPoints = int(x)
-        
+            print('N9020A fails to set sweep points')
+
     def _get_sweepPoints(self):
         try:
             resp = self.instr.query('SWEEP:POINTS?')
-            self._sweepPoints = int(resp) # in MHz
+            self._sweepPoints = int(resp)  # in MHz
         except ValueError:
-            print ('fails to get sweep points')
+            print('N9020A fails to get sweep points')
         return self._sweepPoints
     
-    sweepPoints = property(_get_sweepPoints, _set_sweepPoints,'sweep points')
-    
-    
+    sweepPoints = property(_get_sweepPoints, _set_sweepPoints, 'sweep points')
+
     def _set_startFreqMHz(self,x=10e-3):
         try:
             cmd = 'FREQUENCY:START ' + str(x) + ' MHZ'
             self.instr.write(cmd)
+            self._startFreqMHz = float(x)
         except ValueError:
-            print ('fails to set start frequency')
-        self._startFreqMHz = float(x)
-        
+            print('N9020A fails to set start frequency')
+
     def _get_startFreqMHz(self):
         try:
             resp = self.instr.query('FREQUENCY:START?')
-            self._startFreqMHz = float(resp)/1e6 # in MHz
+            self._startFreqMHz = float(resp)/1e6  # in MHz
         except ValueError:
-            print ('fails to get stop frequency')
+            print('N9020A fails to get stop frequency')
         return self._startFreqMHz
     
     startFreqMHz = property(_get_startFreqMHz, _set_startFreqMHz,'start frequency property')
     
-    def _set_stopFreqMHz(self,x=13.5e3):
+    def _set_stopFreqMHz(self, x=13.5e3):
         try:
             cmd = 'FREQUENCY:STOP ' + str(x) + ' MHZ'
             self.instr.write(cmd)
+            self._stopFreqMHz = float(x)
         except ValueError:
-            print ('fails to set start frequency')
-        self._stopFreqMHz = float(x)
-        
+            print('N9020A fails to set start frequency')
+
     def _get_stopFreqMHz(self):
         try:
             resp = self.instr.query('FREQUENCY:STOP?')
-            self._stopFreqMHz = float(resp)/1e6 # in MHz
+            self._stopFreqMHz = float(resp)/1e6  # in MHz
         except ValueError:
-            print ('fails to get stop frequency')
+            print('N9020A fails to get stop frequency')
         return self._stopFreqMHz
     
-    stopFreqMHz = property(_get_stopFreqMHz, _set_stopFreqMHz,'start frequency property')
+    stopFreqMHz = property(_get_stopFreqMHz, _set_stopFreqMHz, 'start frequency property')
     
-    def _set_traceAve(self,x=1):
+    def _set_traceAve(self, x=1):
         try:
-            if (x >= 1):
+            if x >= 1:
                 cmd = 'ACP:AVER:COUN ' + str(x)
                 self.instr.write(cmd)
-            if (x == 0):
+            if x == 0:
                 self.instr.write('ACPower:AVERage OFF')
+            self._traceAve = int(x)
         except ValueError:
-            print ('fails to set trace average')
-        self._traceAve = int(x)
-        
+            print('N9020A fails to set trace average')
+
     def _get_traceAve(self):
         try:
             resp = self.instr.query('ACPower:AVERage:COUNt?')
             self._traceAve = int(resp)
         except ValueError:
-            print ('fails to get stop frequency')
+            print('N9020A fails to get stop frequency')
         return self._traceAve
-    traceAve = property(_get_traceAve, _set_traceAve,'trace average')
+
+    traceAve = property(_get_traceAve, _set_traceAve, 'trace average')
     
     def getTrace(self):
         _points = self._get_sweepPoints()
-        _stopf =self._get_stopFreqMHz()
-        _startf =self._get_startFreqMHz()
-        _freq = np.linspace(_startf,_stopf,_points)
+        _stopf = self._get_stopFreqMHz()
+        _startf = self._get_startFreqMHz()
+        _freq = np.linspace(_startf, _stopf, _points)
         tmp = ''
         try:
             self.instr.write('FORMAT:TRACE:DATA ASCII')
@@ -814,96 +802,98 @@ class N9020A_SpectrumAnalyzer(VisaInstrument):
             resp = self.instr.read()
             flag = '\n' in resp
             count = 0
-            while (not(flag)):
+            while not flag:
                 tmp = self.instr.read()
                 resp += (tmp)
                 flag = '\n' in tmp
                 count += 1
         except visa.VisaIOError:
-            print('error')
+            print('N9020A get trace error')
             print(tmp)
             resp = tmp
             traceback.print_exc()
             sys.exit(3)
         resp = resp.split(',')
         y = [float(d) for d in resp]
-        y= np.array(y)
-        return (_freq, y)
+        y = np.array(y)
+        return _freq, y
     
     def setMarkerPos(self,pos=0):
         
-         _points = self._get_sweepPoints()
-         cmd = 'calc:mark1:X:pos:cent ' + str(pos)
-         try:
-             if (pos < _points):
-                 self.instr.write(cmd)
-         except visa.VisaIOError:
-            print('write error: '+ cmd)
-        
-    def getMarkerNoise(self,pos=0):
-        #cmd = 'CALC:MARK:FUNCNOIS' 
+        _points = self._get_sweepPoints()
+        cmd = 'calc:mark1:X:pos:cent ' + str(pos)
         try:
-            #self.instr.write(cmd)
+            if pos < _points:
+                self.instr.write(cmd)
+        except visa.VisaIOError:
+            print('N9020A write error: ' + cmd)
+        
+    def getMarkerNoise(self, pos=0):
+        # cmd = 'CALC:MARK:FUNCNOIS'
+        try:
+            # self.instr.write(cmd)
             self.setMarkerPos(pos)
             val = self.instr.query('CALC:MARK:Y?')
+            return float(val)
         except visa.VisaIOError:
-            print('getMarkerNoise error')
-        return float(val)
-    
+            print('N9020A getMarkerNoise error')
+
     def getMarkerNoiceTrace(self):
         _points = self._get_sweepPoints()
-        _stopf =self._get_stopFreqMHz()
-        _startf =self._get_startFreqMHz()
-        _freq = np.linspace(_startf,_stopf,_points)
+        _stopf = self._get_stopFreqMHz()
+        _startf = self._get_startFreqMHz()
+        _freq = np.linspace(_startf, _stopf, _points)
         try:
             self.instr.write('CALC:MARK:FUNCNOIS')
             _points = self._get_sweepPoints()
         except visa.VisaIOError:
-            print('getMarkerNoiceTrace error')
+            print('N9020A getMarkerNoiceTrace error')
                 
         # preallocate array
         data = np.zeros(_points, dtype=float)
         try:
             for i in range(0, _points,1):
-                self.instr.write('calc:mark1:X:pos:cent %d' %i)
+                self.instr.write('calc:mark1:X:pos:cent %d' % i)
                 val = self.instr.query('CALC:MARK:Y?')
-                data[i] = float(val);
-        except:
-            print('getMarkerNoiceTrace error')
-        return ( _freq, data)  
+                data[i] = float(val)
+        except ValueError:
+            print('N9020A getMarkerNoiceTrace error')
+        return _freq, data
     
-    def setTraceType(self,x = 'WRITe'):
+    def setTraceType(self, x='WRITe'):
         try:
-            cmd = 'trace1:type %s'%x
+            cmd = 'trace1:type %s' % x
             self.instr.write(cmd)
         except visa.VisaIOError:
-            print('trace type error %s' %x)
+            print('N9020A trace type write error %s' % x)
             
     def getTraceType(self):
         try:
             cmd = 'trace1:type?'
             resp = self.instr.query(cmd)
         except visa.VisaIOError:
-            print('trace type query error')
+            print('N9020A trace type query error')
         return resp
-                
+
+
 class Agilent_86122A(VisaInstrument):
     
     def getFreq(self):
         try:
             self.instr.write(':MEAS:SCAL:POW:FREQ?')
             resp = float(self.instr.read())
+            return resp
         except visa.VisaIOError:
-            print('error')
-        return resp
+            print('Agilent 86122A error')
 
     def getMultipleFreq(self):
         try:
             self.instr.write(':MEAS:ARR:POW:FREQ?')
             resp = self.instr.read()
+            return resp
         except visa.VisaIOError:
-            print('error')
-        return resp
+            print('Agilent 86122A error')
+
 
 class Agilent_N5183B(VisaInstrument):
     
@@ -912,86 +902,86 @@ class Agilent_N5183B(VisaInstrument):
             resp = self.instr.query(':outp?')
             self._outputOnOff = resp
         except ValueError:
-            print('Agilent_N5183B query fails')
+            print('Agilent N5183B query fails')
         return self._outputOnOff
   
     def _set_outPutOnOff(self, x):
         try:
             cmd = 'outp ' + str(x)
             self.instr.write(cmd)
+            self._outputOnOff = x
         except ValueError:
-            print('Agilent_N5183B write fails')
-        self._outputOnOff = x
-      
+            print('Agilent N5183B write fails')
+
     outputOnOff = property(_get_outPutOnOff, _set_outPutOnOff, "outputOnOff property")
     
-    def setFreq(self, freq_Hz = 1000000):
+    def setFreq(self, freq_Hz=1000000):
         try:
-           cmd = ':freq ' + str(freq_Hz)
-           self.instr.write(cmd)
+            cmd = ':freq ' + str(freq_Hz)
+            self.instr.write(cmd)
         except ValueError:
-            print('Agilent_N5183B write fails')
+            print('Agilent N5183B write fails')
         
     def getFreq(self):
         try:
             resp = self.instr.query(':outp?')
+            return float(resp)
         except ValueError:
-            print('Agilent_N5183B write fails')
-        return float(resp)
-    
-    def setPowerLevel(self,pow_dBm=-20.0):
+            print('Agilent N5183B write fails')
+
+    def setPowerLevel(self, pow_dBm=-20.0):
         try:
-            cmd = ':pow:lev %d'%pow_dBm
+            cmd = ':pow:lev %d' % pow_dBm
             self.instr.write(cmd)
         except ValueError:
-            print('Agilent_N5183B write fails')
+            print('Agilent N5183B write fails')
             
     def getPowerLevel(self):
         try:
             cmd = ':pow:lev?'
             resp = self.instr.query(cmd)
+            return float(resp)
         except ValueError:
-            print('Agilent_N5183B query fails')      
-        return float(resp)
-    
+            print('Agilent N5183B query fails')
+
     
 class SRS(VisaInstrument): 
-    _pidPolarity= 0
+    _pidPolarity = 0
     _pidLoop = 0
     
     def PIDConnect(self):
         try:
-            self.instr.write('CONN 7, \"ZZZ\"');
+            self.instr.write('CONN 7, \"ZZZ\"')
             time.sleep(1)
         except ValueError:
             print('SRS Connect fails') 
         
     def PIDDiscoonect(self):
         try:
-            self.instr.write('\"ZZZ\"');
+            self.instr.write('\"ZZZ\"')
         except ValueError:
             print('SRS Disconnect fails')
         
     def _PIDPolaritySet(self, pol=0):
         try:
-            self.instr.write('APOL %d'%int(pol))
+            self.instr.write('APOL %d' % int(pol))
+            self.instr._pidPolarity = int(pol)
         except ValueError:
             print('SRS APOL set fails')
-        self.instr._pidPolarity=int(pol)
-            
+
     def _PIDPolarityGet(self):
         try:
             resp = self.instr.query('APOL?')
+            self._pidPolarity = int(resp)
         except ValueError:
             print('SRS APOL set fails')
-        self._pidPolarity = int(resp)
         return self._pidPolarity
     
-    PIDPolarity = property(_PIDPolarityGet, _PIDPolaritySet,'PID Polarity')
+    PIDPolarity = property(_PIDPolarityGet, _PIDPolaritySet, 'PID Polarity')
     
-    def _setPIDLoop(self,loop=0):
+    def _setPIDLoop(self, loop=0):
         try:
-            self.instr.write('AMAN %d'%int(loop))
+            self.instr.write('AMAN %d' % int(loop))
         except ValueError:
             print('SRS AMAN set fails')
         self._pidLoop = int(loop)
@@ -999,9 +989,59 @@ class SRS(VisaInstrument):
     def _getPIDLoop(self):
         try:
             resp = self.instr.query('AMAN?')
+            self._pidLoop = int(resp)
         except ValueError:
             print('SRS AMAN get fails')
-        self._pidLoop = int(resp)
         return self._pidLoop
     
-    PIDLoop = property(_getPIDLoop, _setPIDLoop,'PID Loop on/off')
+    PIDLoop = property(_getPIDLoop, _setPIDLoop, 'PID Loop on/off')
+    
+    def setMout(self, val=0):
+        cmd = 'MOUT %f' % val
+        print('setting Mout %s' % cmd)
+        try:
+            self.instr.write(cmd)
+        except ValueError:
+            print('SRS MOUT set fails')
+            
+    def getMout(self):
+        try:
+            resp = self.instr.query('MOUT?')
+            return float(resp)
+        except ValueError:
+            print('SRS MOUT get fails')
+
+
+class Agilent8163A(VisaInstrument):
+
+    def setVoa(self, x):
+        try:
+            cmd = ':INPUT1:CHAN1:att ' + str(x)
+            self.instr.write(cmd)
+        except ValueError:
+            print('Agilent 8163A write fails')
+            
+    def getVoa(self):
+        try:
+            cmd = ':INPUT1:CHAN1:att?'
+            val = self.instr.query(cmd)
+            return float(val)
+        except ValueError:
+            print('Agilent 8163A query fails')
+            
+    def getOpm(self, ch):
+        try:
+            self.instr.write('*CLS')
+            power = self.instr.query(':FETC2:CHAN{}:POW? '.format(ch))
+            return float(power)
+        except ValueError:
+            print('Agilent 8163A query error')
+
+    def initOpm(self):
+        try:
+            self.instr.write('*CLS')
+            for i in range(1, 2):
+                self.write(':SENS2:CHAN{}:POW:WAV 1550.0nm'.format(i))
+                self.write(':SENS2:CHAN{}:POW:ATIM 200ms'.format(i))
+        except ValueError:
+            print('Agilent 8163A write error')

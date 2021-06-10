@@ -62,14 +62,14 @@ class UartHttpInstrument:
             resp = requests.get(url=req_url)
             return resp.content
         except ValueError:
-            print("uart failed query")
+            print("uart failed queryBytes")
 
     def write(self, command):
-        '''
+        """
         write command string to uart instrument
         :param command: (str)
         :return: success
-        '''
+        """
         try:
             cmd = urllib.parse.quote(command)  # escape special chars
             req_url = self.url + 'write/' + cmd
@@ -78,11 +78,11 @@ class UartHttpInstrument:
             print("uart failed write")
 
     def writeBytes(self, command):
-        '''
+        """
         write command string to uart instrument
         :param command: (str) hex-encoded, with 2 hex digits per byte
         :return: None
-        '''
+        """
         try:
             command += '0a'
             req_url = self.url + 'bwrite/' + command

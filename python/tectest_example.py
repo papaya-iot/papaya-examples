@@ -20,7 +20,7 @@ import papaya_uartinst as uartinst
 import time
 from importlib import reload # reload the module, ie visainst when it has change when using console
 
-papaya_ip = "192.168.2.105"
+papaya_ip = "192.168.2.211"
 
 ## GPIB Instrument Setup
 # use VISAInstrument class from visainst.py
@@ -41,12 +41,12 @@ osa.cls()
 osa.ESE = 32
 osa.SRE = 32
 
-dmm = visainst.Agilent_33401(papaya_ip, 28)
+dmm = visainst.Agilent_33401(papaya_ip, 27)
 dmm.cls()
 dmm.ESE = 36
 dmm.SRE = 32
 
-att = visainst.JDSU_HA9(papaya_ip, 21)
+# att = visainst.JDSU_HA9(papaya_ip, 21)
 
 ## I2C Instrument Setup
 # use I2cConnection class from papaya_i2cinst.py
@@ -67,7 +67,7 @@ pwr = uartinst.Agilent_E3631(papaya_ip)
 #             msg timo 5s, byte timo 200000 us
 pwr.set_config(9600, 7, 2, 1, 5000, 200000)
 time.sleep(2) # allow time for config to process
-pwr.write("syst:rem") # needed for inst control using 
+pwr.write("syst:rem") # needed for inst control using
 
 
 ## Test Loop
@@ -82,22 +82,22 @@ for ind in range(1, 100):
     eabias.output = 1
     cnt +=1
     cnt %= 100
-    # tec.settemp(25.00)
-    # if ind % 2 == 0 :
-    #     tec.output = 1
-    # else:
-    #     tec.output = 0
-     
+    tec.settemp(25.00)
+    if ind % 2 == 0 :
+        tec.output = 1
+    else:
+        tec.output = 0
+
     startwav = float(osa.startWavelength)
     trace = osa.getTrace()
     ary = trace.split(',')
     print(len(ary))
-    
+
     y = [float(c) for c in ary]
     stopwav = float(osa.stopWavelength)
 
     print('dmm voltage is %e' % dmm.dcVoltage())
-    
+
     # print('run step %d, at temp %.3f' % (ind, tec.querytemp()))
     print('run step %d, at current %.6f' % (ind, eabias.querycurrent()))
 
@@ -109,15 +109,18 @@ for ind in range(1, 100):
     print('', pwr.queryCurrent())
     print('', pwr.queryVoltage())
 
+    # print('att is %f' % att.attenuation)
+    # print('beam status is %d' % att.beamIsBlocked)
+
     print("elapsed time: {}".format(time.perf_counter() - start_time))
-    
+
 
 print("total elapsed time: {}".format(time.perf_counter() - start_time))
 
 tec.close()
 dmm.close()
 eabias.close()
-att.close()
+# att.close()
 osa.close()
 pwr.close()
 conn.close()

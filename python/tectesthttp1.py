@@ -20,7 +20,7 @@ import papaya_uarthttpinst as uartinst
 
 ## import uspatools
 
-papaya_ip = '192.168.2.105'
+papaya_ip = '192.168.2.211'
 
 tec = hi.Keithley_2510(papaya_ip, 5)
 tec.cls()
@@ -39,20 +39,20 @@ osa.cls()
 osa.ESE = 36
 osa.SRE = 32
 
-dmm = hi.Agilent_33401(papaya_ip, 28)
+dmm = hi.Agilent_33401(papaya_ip, 27)
 dmm.cls()
 dmm.ESE = 36
 dmm.SRE = 32
 
-att = hi.JDSU_HA9(papaya_ip, 21)
+# att = hi.JDSU_HA9(papaya_ip, 21)
 
 ## I2C HTTP Setup
-print(i2cinst.scanI2c('192.168.2.105'))
-bme280 = i2cinst.BME280('192.168.2.105', 0x77, 1)
+print(i2cinst.scanI2c(papaya_ip))
+bme280 = i2cinst.BME280(papaya_ip, 0x77, 1)
 # bme280 = I2cHttpDevice('192.168.2.105', '77')  # this way works too
 
 ## UART HTTP Setup
-pwr = uartinst.Agilent_E3631('192.168.2.105')
+pwr = uartinst.Agilent_E3631(papaya_ip)
 pwr.set_config(9600, 7, 2, 1, 100000, 5000)
 print(pwr.get_config())
 
@@ -61,20 +61,21 @@ start_time = time.perf_counter()
 cnt = 0.
 for ind in range(1, 500):
 
+    print("------- ", ind, " -------")
     eabias.setvoltage(-cnt*50e-3)
     eabias.output = 1
     cnt += 1
     cnt %= 100
-    # tec.settemp(25.00)
-    # if ind % 2 == 0 :
-    #     tec.output = 1
-    # else:
-    #     tec.output = 0
+    tec.settemp(25.00)
+    if ind % 2 == 0 :
+        tec.output = 1
+    else:
+        tec.output = 0
 
     startwav = osa.startWavelength
     trace = osa.getTrace()
     ary = trace.split(',')
-    print(len(ary))
+    print('osa trace len is %d' % len(ary))
     y = [float(c) for c in ary]
     stopwav = osa.stopWavelength
 
@@ -86,10 +87,10 @@ for ind in range(1, 500):
     print('', pwr.queryCurrent())
     print('', pwr.queryVoltage())
 
-    print('att is %f' % att.attenuation)
+    # print('att is %f' % att.attenuation)
     print('dmm voltage is %e' % dmm.dcVoltage())
 
-    # print('run step %d, at temp %.3f' % (ind, tec.querytemp()))
+    print('run step %d, at temp %.3f' % (ind, tec.querytemp()))
     print('run step %d, at current %.6f' % (ind, eabias.querycurrent()))
 
     print("elapsed time: {}".format(time.perf_counter() - start_time))

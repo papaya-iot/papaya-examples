@@ -16,7 +16,12 @@ import time
 
 
 def enforce_int(addr):
-    'given hex string or int address, return integer'
+    """
+    helper function to return an int from hex string or int address
+    :param addr: (string) if i2c device address in hex,
+                (int) if already integer
+    :return: int
+    """
     if type(addr) == int:
         return addr
     elif type(addr) == str and '0x' in addr:
@@ -38,10 +43,10 @@ class I2cConnection:
         self.instr.close()
 
     def scan(self):
-        '''
+        """
         scans devices on i2c bus
         :return: list of hex string addresses present on i2c bus
-        '''
+        """
         # byte[0]: 0x00 for scan cmd
         bytes_to_write = bytes([0])
         try:
@@ -62,12 +67,12 @@ class I2cDevice:
         self.addr = enforce_int(device_address)
 
     def read(self, reg_addr, len_read):
-        '''
+        """
         read len_read bytes starting from register reg_addr
         :param reg_addr: (int) register address to read
         :param len_read: (int) number of bytes to read
         :return: bytestring of data
-        '''
+        """
         # byte[0]: 0x01 for read cmd
         # byte[1]: device address
         # byte[2]: register address
@@ -83,20 +88,20 @@ class I2cDevice:
         try:
             self.instr.write_raw(bytes_to_write)
             data = self.instr.read_raw(len_read)
-            # data = self.instr.read_bytes(len_read)
+            # data = self.instr.read_bytes(len_read)     # can use in pyvisa 1.9.0 and up
             # print(f"read  {hex(self.addr)} reg {hex(int_reg_addr)}: {data}")
             return data
         except ValueError:
             print("i2c failed read")
 
     def write(self, reg_addr, data, len_data=0):
-        '''
-
+        """
+        write data to instrument at reg_addr
         :param reg_addr: (int) register address to write to
         :param data: (bytes) data in bytestring
         :param len_data: (optional int) num of bytes in data, can be computed
         :return: success
-        '''
+        """
         # byte[0]: 0x02 for write cmd
         # byte[1]: device address
         # byte[2]: register address
@@ -118,47 +123,54 @@ class I2cDevice:
         except ValueError:
             print(f"i2c device {hex(self.addr)} failed write")
 
-# using MCP4725 12 I2c bit voltage DAC
-# VXI driver for i2c devices connected to Papaya            
+
 class MCP4725(I2cDevice):
+    """
+    Microchip MCP4725
+    https://ww1.microchip.com/downloads/en/DeviceDoc/22039d.pdf
+    """
+
     def __init__(self, i2c_conn, dev_addr):
         super().__init__(i2c_conn, dev_addr)
     
-    def _read(self, reg=0, numBytes=3):
-        data = self.read(reg,numBytes)
+    def _read(self, reg=0, num_bytes=3):
+        data = self.read(reg, num_bytes)
         return data
         
-    def readVal(self):
-        data = self._read(0,3)
+    def read_val(self):
+        data = self._read(0, 3)
         return int((data[1] * 256 + data[2])/16)
     
-    def readConfig(self):
-        data = self._read(0,3)
+    def read_config(self):
+        data = self._read(0, 3)
         return hex(data[0])
-    
-        
-    def fastWrite(self, val):
+
+    def fast_write(self, val):
         # val in the range of (0 4096)
-        data = val & 255 # get the last 8 bits
-        reg = val >> 8 #this will be the reg
-        #print(f"val is {val}, reg is {hex(reg)}, data is {hex(data)}")
+        data = val & 255  # get the last 8 bits
+        reg = val >> 8  # this will be the reg
+        # print(f"val is {val}, reg is {hex(reg)}, data is {hex(data)}")
         self.write(reg,bytes([data]), len([data]))
         
-    def regularWriteFlash(self, val):
+    def regular_write_flash(self, val):
         # This will update the flash
-        tp = val & 15 # get last 4 bits
+        tp = val & 15  # get last 4 bits
         thirdByte = tp << 4 
-        secondByte = ( val >>4 )
+        secondByte = (val >> 4)
         firstByte = 0x60
         data = bytes([secondByte, thirdByte])
         self.write(firstByte,data,len(data))
 
-# example i2c instrument class
-# adapted from BME280.py, http://abyz.me.uk/rpi/pigpio/examples.html (2016-08-05)
-# This example shows that we porting the original code to use the Wifi
-# Papaya Controller is straightforward and minimal
-# 
+
 class BME280(I2cDevice):
+    """
+    Bosch BME280
+    https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf
+
+    code adapted from BME280.py, http://abyz.me.uk/rpi/pigpio/examples.html (2016-08-05)
+    This example shows that porting the original code to use the Wifi
+    Papaya Controller is straightforward and minimal
+    """
 
     _calib00 = 0x88
 
@@ -242,7 +254,7 @@ class BME280(I2cDevice):
         ms = ((1.25 + 2.3 * self._os_ms[os_temp]) +
               (0.575 + 2.3 * self._os_ms[os_press]) +
               (0.575 + 2.3 * self._os_ms[os_hum]))
-        return (ms / 1000.0)
+        return ms / 1000.0
 
     def _load_calibration(self):
 
@@ -251,10 +263,6 @@ class BME280(I2cDevice):
         self.T1 = self._u16(d1, self._T1)
         self.T2 = self._s16(d1, self._T2)
         self.T3 = self._s16(d1, self._T3)
-        # print format(self._u8(d1,self._T1),'02x')
-
-        # for index in range(len(d1)):
-        #     print(index, format(d1[index], '02x'))
 
         self.P1 = self._u16(d1, self._P1)
         self.P2 = self._s16(d1, self._P2)

@@ -25,7 +25,7 @@ class GpibHttpInstrument:
     def __init__(self, ip, address):
         self.url = 'http://' + ip + '/'
         self.adr = address
-        self.__outpuOnOff = 0
+        self.__outpuOnOff = -1  # nonsense init values until first read
         self._output = ''
 
     def _get_status(self):
@@ -63,8 +63,8 @@ class GpibHttpInstrument:
     def read(self):
         try:
             req_url = f'{self.url}read?adr={self.adr}'    # req.params
-#            resp = requests.get(url=req_url).json(strict=False)     # use strict=false to allow \n
-#            return resp['data']
+            # resp = requests.get(url=req_url).json(strict=False)     # use strict=false to allow \n
+            # return resp['data']
             # req_url = f'{self.url}read/{self.adr}'    # field exp
             # print(req_url)
             resp = requests.get(url=req_url)
@@ -243,26 +243,18 @@ class Tek_DPO72004B(GpibHttpInstrument):
         try:
             resp = self.query('CURV?')
             flag = '\n' in resp
-            #print(flag)
             count = 0
-            while (not(flag)):
-                #time.sleep(0.1)
+            while not flag:
                 tmp = self.read()
-                #elmcount.append(len(tmp.split(',')))
-                #print('length %i and count %i'% (len(tmp),count))
                 resp += (tmp)
                 flag = '\n' in tmp
                 count += 1
-                #print (elmcount)
-                #print (count)
         except Exception:
             print('error')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
             sys.exit(3)
-            
-    #        data = dataraw
+
         data = resp.split(',')
         ymult = float(self.GetVerticalScale())
         yzero = float(self.GetVerticalOffset())
@@ -273,12 +265,10 @@ class Tek_DPO72004B(GpibHttpInstrument):
         for i in range(len(data)):
             t.append(i*xincr)
             volts.append((float(data[i])-yoff)*ymult + yzero)
-            #volts.append(data[i])
         return t, volts
 
     def take_a_OSC_measure(self):
         self.write('DAT:ENC ASCI')
-        #osc.write('ACQ:STATE RUN')
         time.sleep(1)
         t, v = self.GetWaveDataIter('CH4')
         return t, v
@@ -290,108 +280,93 @@ class Keysight_N9030B(GpibHttpInstrument):
         
     def get_trace_iter(self, trace='TRACE1'):
         count = 0
-        elmcount = []
-        resp =''
+        resp = ''
         flag = False
         try:
-            self.write('trac:data? %s' %trace)          
-            #count += len(resp.split(','))       
-            while (not(flag)):
-                #time.sleep(0.1)
+            self.write('trac:data? %s' % trace)
+            while not flag:
                 tmp = self.read()
                 flag = '\n' in tmp
-                #print(flag)
                 count += len(tmp.split(','))
-                #elmcount.append(count)
-                resp += (tmp)
-                #print (elmcount)
-                #print (tmp)
+                resp += tmp
         except Exception:
             print('error')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
             sys.exit(3)
     
-        data = regex.split(',',resp)  
+        data = regex.split(',', resp)
         x = [float(c) for c in data]
         return x
-        
+
+
 class yokogawaAQ6370D(GpibHttpInstrument):
     def __init__(self, ip, address=1):
         super().__init__(ip, address)
 
-        
-    def OSA_sweep(self,start,end):
-        self.write(':SENSE:WAVELENGTH:START %fNM;:SENSE:WAVELENGTH:STOP %fNM'%(start,end))
+    def OSA_sweep(self, start, end):
+        self.write(':SENSE:WAVELENGTH:START %fNM;:SENSE:WAVELENGTH:STOP %fNM' % (start, end))
         self.write(':SENSE:SENSE MID')
         self.write(':INIT:SMODE SINGLE;:INIT')
-        receiv = self.query(':STAT:OPER:EVEN?')
+        receive = self.query(':STAT:OPER:EVEN?')
         try:
-            receiv = int(receiv) & 1
-        except:
-            receiv = 0
-        while not receiv == 1:
-            receiv = self.query(':STAT:OPER:EVEN?')
+            receive = int(receive) & 1
+        except ValueError:
+            receive = 0
+        while not receive == 1:
+            receive = self.query(':STAT:OPER:EVEN?')
             try:
-                receiv = int(receiv) & 1
-            except:
-                receiv = 0
+                receive = int(receive) & 1
+            except ValueError:
+                receive = 0
                 
     def OSA_get_trace_iter(self, trace):
-        number = int(self.query(':TRACE:DATA:SNUMBER? %s'%trace)) 
+        """
+
+        :param trace: trace number
+        :return: trace data
+        """
+        # number of data points
+        # number = int(self.query(':TRACE:DATA:SNUMBER? %s' % trace))
         count = 0
-        elmcount = []
-        resp =''
+        resp = ''
         flag = False
         try:
-            self.write(':TRACE:DATA:X? %s'%trace)          
-            #count += len(resp.split(','))       
-            while (not(flag)):
-                #time.sleep(0.1)
+            self.write(':TRACE:DATA:X? %s' % trace)
+            while not flag:
                 tmp = self.read()
                 flag = '\n' in tmp
-                #print(flag)
                 count += len(tmp.split(','))
-                #elmcount.append(count)
-                resp += (tmp)
-                #print (elmcount)
-                #print (tmp)
+                resp += tmp
         except Exception:
             print('error')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
             sys.exit(3)
     
-        data = regex.split(',',resp)  
+        data = regex.split(',', resp)
         x = [float(c) for c in data]
     
         self.write(':TRACE:DATA:Y? %s'%trace)
         count = 0
-        resp =''
+        resp = ''
         flag = False
         try:
-            while (not(flag)):
-                #time.sleep(0.1)
+            while not flag:
                 tmp = self.read()
                 count += len(tmp.split(','))
                 flag = '\n' in tmp
-                #elmcount.append(len(tmp.split(',')))
-                #print('length %i and count %i'% (len(tmp),count))
-                resp += (tmp)
-                #print (elmcount)
-                #print (count)
+                resp += tmp
         except Exception:
             print('error')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
             sys.exit(3)
     
-        data = regex.split(',',resp)
+        data = regex.split(',', resp)
         y = [float(c) for c in data]
-        return (x,y)
+        return x, y
+
 
 class Keithley_2400(GpibHttpInstrument):
     def __init__(self, ip, address=1):
@@ -399,20 +374,20 @@ class Keithley_2400(GpibHttpInstrument):
 
     def sourcetype(self, type):
         if type == 'voltage':
-            super().write(':SOUR:FUNC VOLT')
-            super().write(':SENS:FUNC "CURR"')  # Sensing current
+            self.write(':SOUR:FUNC VOLT')
+            self.write(':SENS:FUNC "CURR"')
         elif type == 'current':
-            super().write(':SOUR:FUNC CURR')
-            super().write(':SENS:FUNC "VOLT"')  # Sensing current
+            self.write(':SOUR:FUNC CURR')
+            self.write(':SENS:FUNC "VOLT"')
 
     def setvoltage(self, vb, curlimit=0.05):
-        super().write(':SENS:CURR:PROT %f' % curlimit)  # Set compliance current to 40 mA
-        super().write(':SOUR:VOLT:LEV %f' % vb)
+        self.write(':SENS:CURR:PROT %f' % curlimit)  # Set compliance current to 40 mA
+        self.write(':SOUR:VOLT:LEV %f' % vb)
 
     def querycurrent(self):
         try:
-            super().write(':FORM:ELEM CURR')
-            cur = super().query('READ?')
+            self.write(':FORM:ELEM CURR')
+            cur = self.query('READ?')
             c = float(cur)
         except ValueError:
             print('warning: current reading error...')
@@ -421,12 +396,12 @@ class Keithley_2400(GpibHttpInstrument):
         return float(c)
 
     def setcurrent(self, cur, vlimit=2):
-        super().write(':SENS:VOLT:PROT %f' % vlimit)
-        super().write(':SOUR:CURR:LEV %s' % cur)
+        self.write(':SENS:VOLT:PROT %f' % vlimit)
+        self.write(':SOUR:CURR:LEV %s' % cur)
 
     def _get_output(self):
         try:
-            resp = super().query(':OUTPUT?')
+            resp = self.query(':OUTPUT?')
             self._output = float(resp)
         except ValueError:
             print('Keithley 2400 query fails')
@@ -435,7 +410,7 @@ class Keithley_2400(GpibHttpInstrument):
     def _set_output(self, x):
         try:
             cmd = ':OUTPUT  ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('Keithley 2400 write fails')
         self._output = x
@@ -450,17 +425,17 @@ class Agilent_E3631(GpibHttpInstrument):
     def _get_outputOnOff(self):
         try:
             # req_adr = self.url + 'query/{}/:outp%3f'.format(self.adr)
-            resp = super().query(':outp?')
+            resp = self.query(':outp?')
             self.__outpuOnOff = int(resp)  # update outpuOnOff var
         except Exception as e:
-            resp = {'error': True, 'data': e}
+            print(e)
         return self.__outpuOnOff
 
     def _set_outputOnOff(self, x):
         try:
             # cmd = urllib.parse.quote('outp ' + str(x))
             # req_adr = '{}write/{}/{}'.format(self.url, self.adr, cmd)
-            super().write('outp {}'.format(x))
+            self.write('outp {}'.format(x))
             self.__outpuOnOff = x
         except Exception as e:
             print(e)
@@ -469,14 +444,14 @@ class Agilent_E3631(GpibHttpInstrument):
 
     def queryCurrent(self):
         try:
-            resp = float(super().query(':meas:curr:dc?'))
+            resp = float(self.query(':meas:curr:dc?'))
         except ValueError:
             print('Agilent E3631 query failure')
         return resp
 
     def queryVoltage(self):
         try:
-            resp = float(super().query(':meas:volt:dc?'))
+            resp = float(self.query(':meas:volt:dc?'))
         except ValueError:
             print('Agilent E3631 query failure')
         return resp
@@ -488,27 +463,27 @@ class Agilent_33401(GpibHttpInstrument):
 
     def queryIDN(self):
         try:
-            resp = super().query('*IDN?')
+            resp = self.query('*IDN?')
         except ValueError:
             print('Agilent 33401 fails query')
         return resp
 
     def cls(self):
         try:
-            super().write('*CLS')
+            self.write('*CLS')
         except ValueError:
             print('Agilent 33401 fails to clear')
 
     def _set_ESE(self, x):
         try:
             cmd = '*ESE ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('Agilent 33401 ESE write fails')
 
     def _get_ESE(self):
         try:
-            resp = super().query('*ESE?')
+            resp = self.query('*ESE?')
             self._output = float(resp)
         except ValueError:
             print('Agilent 33401 *ESE query fails')
@@ -519,13 +494,13 @@ class Agilent_33401(GpibHttpInstrument):
     def _set_SRE(self, x):
         try:
             cmd = '*SRE ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('Agilent 33401 SRE write fails')
 
     def _get_SRE(self):
         try:
-            resp = super().query('*SRE?')
+            resp = self.query('*SRE?')
             self._output = float(resp)
         except ValueError:
             print('Agilent 33401 *SRE query fails')
@@ -535,32 +510,32 @@ class Agilent_33401(GpibHttpInstrument):
 
     def acVoltage(self):
         try:
-            super().write(':meas:volt:ac?')
-            resp = float(super().read())
+            self.write(':meas:volt:ac?')
+            resp = float(self.read())
             return resp
         except ValueError:
             print('Agilent 33401 fails query')
 
     def acCurrent(self):
         try:
-            super().write(':meas:curr:ac?')
-            resp = float(super().read())
+            self.write(':meas:curr:ac?')
+            resp = float(self.read())
             return resp
         except ValueError:
             print('Agilent 33401 fails query')
 
     def dcVoltage(self):
         try:
-            super().write(':meas:volt:dc?')
-            resp = float(super().read())
+            self.write(':meas:volt:dc?')
+            resp = float(self.read())
             return resp
         except ValueError:
             print('Agilent 33401 fails query')
 
     def dcCurrent(self):
         try:
-            super().write(':meas:curr:dc?')
-            resp = float(super().read())
+            self.write(':meas:curr:dc?')
+            resp = float(self.read())
             return resp
         except ValueError:
             print('Agilent 33401 fails query')
@@ -571,13 +546,13 @@ class Keithley_2510(GpibHttpInstrument):
     # def __init__(self, resourceName='GPIB0::15::INSTR', defaultmode='temp'):
     def __init__(self, ip, adr=1):
         super().__init__(ip, adr)
-        super().write(':SOUR:FUNC TEMP')
+        self.write(':SOUR:FUNC TEMP')
 
     def querytemp(self):
         try:
-            # super().write(':MEAS:TEMP?')
-            # temp = super().read()
-            temp = super().query(':MEAS:TEMP?')
+            # self.write(':MEAS:TEMP?')
+            # temp = self.read()
+            temp = self.query(':MEAS:TEMP?')
             t = float(temp)
         except ValueError:
             print('warning: temp read error...')
@@ -586,11 +561,11 @@ class Keithley_2510(GpibHttpInstrument):
         return float(t)
 
     def settemp(self, setT='25'):
-        super().write(':SOUR:TEMP %f' % setT)
+        self.write(':SOUR:TEMP %f' % setT)
 
     def _get_output(self):
         try:
-            resp = super().query(':OUTPUT?')
+            resp = self.query(':OUTPUT?')
             self._output = float(resp)
         except ValueError:
             print('Keithley 2510 query fails')
@@ -599,7 +574,7 @@ class Keithley_2510(GpibHttpInstrument):
     def _set_output(self, x):
         try:
             cmd = ':OUTPUT  ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('Keithley 2510 write fails')
         self._output = x
@@ -612,17 +587,17 @@ class Newport_3150(GpibHttpInstrument):
     # def __init__(self, resourceName='GPIB0::15::INSTR', defaultmode='temp'):
     def __init__(self, ip, adr=1):
         super().__init__(ip, adr)
-        super().write(':SOUR:FUNC TEMP"')
+        self.write(':SOUR:FUNC TEMP"')
 
     def queryIDN(self):
         try:
-            resp = super().query('*IDN?')
+            resp = self.query('*IDN?')
         except ValueError:
             print('Newport 3150 fails query')
         return resp
 
     def querytemp(self):
-        temp = super().query(':TEC:T?')
+        temp = self.query(':TEC:T?')
         try:
             t = float(temp['data'])
         except ValueError:
@@ -632,7 +607,7 @@ class Newport_3150(GpibHttpInstrument):
         return float(t)
 
     def settemp(self, setT='25'):
-        super().write(':TEC:T %f' % setT)
+        self.write(':TEC:T %f' % setT)
 
 
 class powermeter(GpibHttpInstrument):
@@ -643,13 +618,13 @@ class powermeter(GpibHttpInstrument):
 
     def queryIDN(self):
         try:
-            resp = super().query('*IDN?')
+            resp = self.query('*IDN?')
         except ValueError:
             print('Agilent 86163 fails query')
         return resp
 
     def querypower(self):
-        opt = super().query('READ:POW?')
+        opt = self.query('READ:POW?')
         return float(opt)
 
 
@@ -664,41 +639,36 @@ class dca(GpibHttpInstrument):
 
     def getER(self, source='1', ch='2A'):
         cmd = ':MEASure:EYE:OER:SOURce' + source + ' CHAN' + ch
-        super().write(cmd)
-        er = super().query(':MEASure:EYE:OER?')
+        self.write(cmd)
+        er = self.query(':MEASure:EYE:OER?')
         return float(er)
 
     def getOMA(self, source='1', ch='2A'):
         cmd = ':MEASure:EYE:OOMA:SOURce' + source + ' CHAN' + ch
-        super().write(cmd)
-        oma = super().query(':MEASure:EYE:OOMA?')
+        self.write(cmd)
+        oma = self.query(':MEASure:EYE:OOMA?')
         return float(oma)
 
     def getRLM(self, source='1', ch='2A'):
         cmd = ':MEASure:EYE:PAM:LINearity:SOURce' + source + ' CHAN' + ch
-        super().write(cmd)
-        RLM = super().query(':MEASure:EYE:PAM:LINearity?')
+        self.write(cmd)
+        RLM = self.query(':MEASure:EYE:PAM:LINearity?')
         return float(RLM)
 
     #    def getTDEDQ(self):
-    #        return super().query()
+    #        return self.query()
 
     def autoscale(self):
-        super().write(':SYSTem:AUToscale')
-        super().ask('*OPC?')
+        self.write(':SYSTem:AUToscale')
+        self.ask('*OPC?')
 
     def clear(self):
-        super().write(':ACQuire:CDISplay')
-        super().ask('*OPC?')
+        self.write(':ACQuire:CDISplay')
+        self.ask('*OPC?')
 
     def run(self):
-        super().write(':ACQuire:RUN')
-    #    def savejpg(self,ch='2A',fname='',path='')
+        self.write(':ACQuire:RUN')
 
-
-#        cmd = ':DISPlay:WINDow:TIME1:ZSIGnal CHAN'+ch
-#        super().write(cmd)
-#        self.
 
 class Agilent_86142(GpibHttpInstrument):
     def __init__(self, ip, adr=1):
@@ -709,27 +679,27 @@ class Agilent_86142(GpibHttpInstrument):
 
     def queryIDN(self):
         try:
-            resp = super().query('*IDN?')
+            resp = self.query('*IDN?')
         except ValueError:
             print('Agilent 86142 fails query')
         return resp
 
     def cls(self):
         try:
-            super().write('*CLS')
+            self.write('*CLS')
         except ValueError:
             print('Keithley 86142 fails to clear')
 
     def _set_ESE(self, x):
         try:
             cmd = '*ESE ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('86142 ESE write fails')
 
     def _get_ESE(self):
         try:
-            resp = super().query('*ESE?')
+            resp = self.query('*ESE?')
             self._output = float(resp)
         except ValueError:
             print('86142 *ESE query fails')
@@ -740,13 +710,13 @@ class Agilent_86142(GpibHttpInstrument):
     def _set_SRE(self, x):
         try:
             cmd = '*SRE ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('86142 SRE write fails')
 
     def _get_SRE(self):
         try:
-            resp = super().query('*SRE?')
+            resp = self.query('*SRE?')
             self._output = float(resp)
         except ValueError:
             print('86142 *SRE query fails')
@@ -756,7 +726,7 @@ class Agilent_86142(GpibHttpInstrument):
 
     def _get_startWavelength(self):
         try:
-            resp = super().query(':sens:wav:star?')
+            resp = self.query(':sens:wav:star?')
             self._startWavelength = float(resp)
         except ValueError:
             print('Agilent 86142 query get startwav fails')
@@ -765,7 +735,7 @@ class Agilent_86142(GpibHttpInstrument):
     def _set_startWavelength(self, x):
         try:
             cmd = ':sens:wav:star ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('Agilent 86142 write fails')
         self._startWavelength = x
@@ -774,7 +744,7 @@ class Agilent_86142(GpibHttpInstrument):
 
     def _get_stopWavelength(self):
         try:
-            resp = super().query(':sens:wav:stop?')
+            resp = self.query(':sens:wav:stop?')
             self._stopWavelength = float(resp)
         except ValueError:
             print('Agilent 86142 query get stopwav fails')
@@ -783,7 +753,7 @@ class Agilent_86142(GpibHttpInstrument):
     def _set_stopWavelength(self, x):
         try:
             cmd = ':sens:wav:stop ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('Agilent 86142 write fails')
         self._stopWavelength = x
@@ -792,7 +762,7 @@ class Agilent_86142(GpibHttpInstrument):
 
     def _get_traceLength(self):
         try:
-            resp = super().query(':SENS:SWE:POIN?')
+            resp = self.query(':SENS:SWE:POIN?')
             self._traceLength = float(resp)
         except ValueError:
             print('Agilent 86142 query get traclen fails')
@@ -801,7 +771,7 @@ class Agilent_86142(GpibHttpInstrument):
     def _set_traceLength(self, x):
         try:
             cmd = ':SENS:SWE:POIN ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('Agilent 86142 write fails')
         self._traceLength = x
@@ -812,33 +782,23 @@ class Agilent_86142(GpibHttpInstrument):
         tmp = ''
         elmcount = []
         try:
-            super().write('form ascii')
-            super().write('trac? tra')
-            resp = super().read()
+            self.write('form ascii')
+            self.write('trac? tra')
+            resp = self.read()
             flag = '\n' in resp
             count = 0
-            while (not (flag)):
-                # time.sleep(0.1)
-                tmp = super().read()
+            while not flag:
+                tmp = self.read()
                 elmcount.append(len(tmp.split(',')))
-                # print('length %i and count %i'% (len(tmp),count))
                 resp += (tmp)
                 flag = '\n' in tmp
                 count += 1
                 print(elmcount)
-            # print (count)
         except Exception:
-            print('error')
+            print('Agilent 86142 error')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
-        ###COMMENTED OUT BC ERRORS
-        # except visa.VisaIOError:
-        #     print('error')
-        #     print(tmp)
-        #     resp = tmp
-        #     traceback.print_exc()
-        #     sys.exit(3)
+            sys.exit(3)
         return resp
 
     def getTrace1(self, pts):
@@ -847,51 +807,34 @@ class Agilent_86142(GpibHttpInstrument):
         count = 0
         itr = 0
         try:
-            super().write('form ascii')
-            super().write('trac? tra')
-            resp = super().read()
-            # print('resp', len(resp), resp)
-            flag = '\n' in resp
+            self.write('form ascii')
+            self.write('trac? tra')
+            resp = self.read()
             count += len(resp.split(','))
-            while count < pts:  # (not(flag)):
-                # time.sleep(0.1)
-                tmp = super().read()
+            while count < pts:
+                tmp = self.read()
                 count += len(tmp.split(','))
                 elmcount.append(count)
-                # print('length %i and count %i'% (len(tmp),count))
                 resp += (tmp)
-                # flag = '\n' in tmp
-                # if itr < 2:
-                # print (' ' + str(count))
-                # print('tmp', len(tmp))
-                # print(str(itr), tmp)
-                # else:
-                # print(str(itr), tmp)
                 itr += 1
-            # print (count)
         except Exception:
-            print('error')
+            print('Agilent 86142 error')
             print(tmp)
-            resp = tmp
             traceback.print_exc()
             sys.exit(3)
         return resp
 
     def getTraceBin(self):
         try:
-            super().write('form real32')
-            super().write('trac? tra')
-            resp = super().read()
+            self.write('form real32')
+            self.write('trac? tra')
+            resp = self.read()
         except ValueError:
             print('Agilent 86142 write fails')
         return resp
 
 
 class JDSU_HA9(GpibHttpInstrument):
-    # def __init__(self, resourceName):
-    #     rm = visa.ResourceManager()
-    #     super() = rm.open_resource(resourceName)
-    #     super().timeout = 10000
     def __init__(self, ip, adr=1):
         super().__init__(ip, adr)
         self._attenuation = 0
@@ -899,7 +842,7 @@ class JDSU_HA9(GpibHttpInstrument):
 
     def _get_attenuation(self):
         try:
-            resp = super().query('att?')
+            resp = self.query('att?')
             self._attenuation = float(resp)
         except ValueError:
             print('JDSU HA9 query fails')
@@ -908,7 +851,7 @@ class JDSU_HA9(GpibHttpInstrument):
     def _set_attenuation(self, x):
         try:
             cmd = 'att ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('JDSU HA9 write fails')
         self._attenuation = x
@@ -917,7 +860,7 @@ class JDSU_HA9(GpibHttpInstrument):
 
     def _get_beamIsBlocked(self):
         try:
-            resp = super().query('D?')
+            resp = self.query('D?')
             self._beamIsBlocked = int(resp)
         except ValueError:
             print('JDSU HA9 query fails')
@@ -926,7 +869,7 @@ class JDSU_HA9(GpibHttpInstrument):
     def _set_beamIsBlocked(self, x):
         try:
             cmd = 'D ' + str(int(x))
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('JDSU HA9 write fails')
         self._beamIsBlocked = int(x)
@@ -943,13 +886,13 @@ class thermoStreamTP04100(GpibHttpInstrument):
     def _set_SRE(self, x):
         try:
             cmd = '*SRE ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('thermoStreamTP04100 SRE write fails')
 
     def _get_SRE(self):
         try:
-            resp = super().query('*SRE?')
+            resp = self.query('*SRE?')
             self._output = float(resp['data'])
         except ValueError:
             print('thermoStreamTP04100 *SRE query fails')
@@ -960,7 +903,7 @@ class thermoStreamTP04100(GpibHttpInstrument):
     def _set_flow(self, x):
         try:
             cmd = 'FLOW ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('thermoStreamTP04100 FLOW write fails')
 
@@ -972,13 +915,13 @@ class thermoStreamTP04100(GpibHttpInstrument):
     def _set_tempSetPoint(self, x):
         try:
             cmd = 'SETP ' + str(x)
-            super().write(cmd)
+            self.write(cmd)
         except ValueError:
             print('thermoStreamTP04100 SETP write fails')
 
     def _get_tempSetPoint(self):
         try:
-            resp = super().query('SETP?')
+            resp = self.query('SETP?')
             self._output = float(resp['data'])
         except ValueError:
             print('thermoStreamTP04100 SETP query fails')
@@ -988,7 +931,7 @@ class thermoStreamTP04100(GpibHttpInstrument):
 
     def readDutTemp(self):
         try:
-            resp = super().query('TMPD?')
+            resp = self.query('TMPD?')
             self._output = float(resp['data'])
         except ValueError:
             print('thermoStreamTP04100 read dut temperature fails')
@@ -996,27 +939,8 @@ class thermoStreamTP04100(GpibHttpInstrument):
 
     def readAirTemp(self):
         try:
-            resp = super().query('TMPA?')
+            resp = self.query('TMPA?')
             self._output = float(resp['data'])
         except ValueError:
             print('thermoStreamTP04100 read air temperature fails')
         return self._output
-    
-        
-
-# without
-# class tekDSA8300(GpibHttpInstrument):
-#     def __init__(self, ip, address=1):
-#         super().__init__(ip, address)
-#
-# class ANR_MP1800A(GpibHttpInstrument):
-#     def __init__(self, ip, address=1):
-#         super().__init__(ip, address)
-#
-# class Keysight86100D(GpibHttpInstrument):
-#     def __init__(self, ip, address=1):
-#         super().__init__(ip, address)
-#
-# class GP_MPC101(GpibHttpInstrument):
-#     def __init__(self, ip, address=1):
-#         super().__init__(ip, address)

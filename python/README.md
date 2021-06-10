@@ -17,7 +17,7 @@ The remaining files are example files that implement these instrument classes.
 
 Required Python Libraries
 -------------------------------------
-For the visa interface, PyVISA (1.10.1+) is required. See setup_visa.txt for further instructions.
+For the visa interface, PyVISA (1.10.1+) is required.
 
 For the http interface, please make sure to install:
 - http
