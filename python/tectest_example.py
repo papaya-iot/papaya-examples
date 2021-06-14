@@ -46,7 +46,7 @@ dmm.cls()
 dmm.ESE = 36
 dmm.SRE = 32
 
-# att = visainst.JDSU_HA9(papaya_ip, 21)
+att = visainst.JDSU_HA9(papaya_ip, 21)
 
 ## I2C Instrument Setup
 # use I2cConnection class from papaya_i2cinst.py
@@ -109,8 +109,8 @@ for ind in range(1, 100):
     print('', pwr.queryCurrent())
     print('', pwr.queryVoltage())
 
-    # print('att is %f' % att.attenuation)
-    # print('beam status is %d' % att.beamIsBlocked)
+    print('att is %f' % att.attenuation)
+    print('beam status is %d' % att.beamIsBlocked)
 
     print("elapsed time: {}".format(time.perf_counter() - start_time))
 

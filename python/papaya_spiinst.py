@@ -434,7 +434,7 @@ if __name__ == '__main__':
     # MAX11311PMB demo with Papaya GPIB Controller
     # Find documentation and config software for MAX11311 at:
     # https://www.maximintegrated.com/en/products/analog/data-converters/analog-to-digital-converters/MAX11311.html
-    papaya_ip = "192.168.2.116"
+    papaya_ip = "192.168.2.211"
     mx = MAX11311(papaya_ip)
 
     filename = 'MAX11311Register2.csv'

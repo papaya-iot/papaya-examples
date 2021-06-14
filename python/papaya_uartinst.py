@@ -189,7 +189,7 @@ class UartInstrument:
         len_cmd = len(cmd) 
         data_bytes = cmd     # cmd bytes wo newline
         bytes_to_write = bytes([0x08]) + len_cmd.to_bytes(2, 'little') + data_bytes
-        print(bytes_to_write)
+        #print(bytes_to_write)
 
         try:
             self.instr.write_raw(bytes_to_write)
@@ -229,7 +229,7 @@ class UartInstrument:
 # Byte Timeout(us) is related to the read duration to read data on the RxD line. When it is set 
 # to 100000us or 0.1s, the RxD line is read for 0.1s, even if all the data that has been transmitted
 # has been read before the 0.1s interval is complete. For example, 
-# if the data to be read in is not small, then the Byte Timeout(us) should be set to a small value to 
+# if the data to be read in is small, then the Byte Timeout(us) should be set to a small value to 
 # improve the response time. On the other hand, when reading in a large amount of data, 
 # the users will need to increase the Byte Timeout (us) to a few seconds in order to completely read 
 # in the data. Note that the Byte Timeout value also depends on the baud rate.
@@ -315,7 +315,7 @@ class UartInstrument:
 
     def set_NSBconfig(self, ibrd=2,fbrd=32, num_bits=8, parity=0, stop_bits=1, msg_timeout=5000, byte_timeout=100, rxfifo =1):
         """
-        set uart configuration
+        set uart configuration for fractional baudrate (Non Standard)
         :param ibrd is integer divider
         :param fbrd is fractional divider
         :param num_bits: (int) number of bits in a message (5,6,7 or 8)
@@ -397,6 +397,18 @@ class UartInstrument:
         except ValueError:
             print("uart failed read")
 
+    def calc_NSBbaudrate(self, ibrd=2,fbrd=32):
+        # method to calculate the fractional baudrate
+        # using the uart clock of 62.5MHz
+        # this does not set the baudrate to the Papaya GPIB Controller
+        # the ibrd has the minimum value of 1
+        if (ibrd > 0):
+            uartClock = 62.5e6
+            fracDiv = ibrd + float(fbrd)/64.0
+            return (uartClock/(16.0*fracDiv))
+        else:
+            print("min ibrd value is 1")
+        
 
 class Agilent_E3631(UartInstrument):
     def _get_outPutOnOff(self):
@@ -499,6 +511,18 @@ class Agilent_E3631(UartInstrument):
 
 
 class Vex5Brain(UartInstrument):
+    # This example demonstrates the Non-Standard or fractional UART
+    # baud rate capability of the Papaya GPIB Controller. The Vex Rebotics V5
+    # is chonsen because the UART baud rate is 1.5625Mbits/s 
+    # The Papaya GPIB Controller is used to snoop and decode the Vex Robotics 
+    # motor messaged. The details of V5 Brain microcontroller 
+    # and the V5 motor can be found 
+    # https://www.vexrobotics.com/276-4810.html and
+    # https://www.vexrobotics.com/276-4840.html respectively.
+    # A RJ11 splitter and and RS485 transceiver are needed.
+    # https://www.amazon.com/Telephone-Training-Adapter-Connections-Headset/dp/B075P29P2Q/ref=sr_1_3?dchild=1&keywords=rj11+splitter+4P4C&qid=1623637005&sr=8-3
+    # https://www.vexforum.com/t/lidar-4-wire-uart-with-vex-v5/79430/8
+    # https://www.mouser.com/ProductDetail/Texas-Instruments/SN65HVD11P?qs=QViXGNcIEAsnINFbXL01HQ%3D%3D
     _resp = bytes([0x02,0x76,0x01,0x12,0xef,0x00,0x00,0x00,0x00,0x00,0x32,0x00,0x00,0x00,0x7f,0x27])
 
     def configBrain(self):
@@ -557,14 +581,14 @@ class Vex5Brain(UartInstrument):
 
 if __name__ == '__main__':
     print('papaya UART demo')
-    papaya_ip = "192.168.2.211"
+    papaya_ip = "192.168.2.127"
 
-    pwr = Agilent_E3631(papaya_ip)
+    #pwr = Agilent_E3631(papaya_ip)
     # set default config: baud rate 9600, 8 numbits, no parity, 1 stopbits,
     #             msg timo 5s, byte timo 200000 us
-    pwr.set_config(9600, 7, 2, 1, 5000, 200000)
-    time.sleep(2)  # allow time for config to process
-    pwr.write("syst:rem")  # needed for inst control using
+    #pwr.set_config(9600, 7, 2, 1, 5000, 200000)
+    #time.sleep(2)  # allow time for config to process
+    #pwr.write("syst:rem")  # needed for inst control using
     
-    # vex = Vex5Brain(papaya_ip)
-    # vex.configBrain()
+    vex = Vex5Brain(papaya_ip)
+    vex.configBrain()
