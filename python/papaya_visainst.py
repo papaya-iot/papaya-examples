@@ -22,7 +22,12 @@ import numpy as np
 
 class VisaInstrument:
 
-    def __init__(self, ip, gpib_address):      
+    def __init__(self, ip, gpib_address):
+        """
+        initialize visa instrument resource
+        :param ip: (str) ip address of Papaya
+        :param gpib_address: (str) GPIB address of instrument
+        """
         resource_name = "TCPIP0::%s::inst%s::INSTR" % (ip, gpib_address)
         print(resource_name)
         rm = visa.ResourceManager()
@@ -230,7 +235,8 @@ class Keithley_2400(VisaInstrument):
         self._output = x
         
     output = property(_get_output, _set_output, "output property")
-        
+
+
 class Agilent_E3631(VisaInstrument):
    
     def _get_outPutOnOff(self):
@@ -264,13 +270,13 @@ class Agilent_E3631(VisaInstrument):
         except ValueError:
             print('Agilent E3631 query voltage fails')
         return float(resp)
-    
+
     def selectPowerSupply(self, x):
-        '''
+        """
         select power supply instrument,
         :param x: (int) 1 is P6V, 2 is P25V and 3 is N25V
         :return: none
-        '''
+        """
         try:
             cmd = 'INST:NSEL ' + str(x)
             self.instr.write(cmd)
@@ -285,7 +291,7 @@ class Agilent_E3631(VisaInstrument):
             self.instr.write(cmd)
         except ValueError:
             print('Agilent E3631 set P6V fails')
-    
+
     def queryP6VSetVoltage(self):
         try:
             # P6V is 1
@@ -294,7 +300,7 @@ class Agilent_E3631(VisaInstrument):
         except ValueError:
             print('Agilent E3631 query P6V fails')
         return float(val)
-    
+
     def setP25VSupply(self,x):
         try:
             # P25V is 2
@@ -303,7 +309,7 @@ class Agilent_E3631(VisaInstrument):
             self.instr.write(cmd)
         except ValueError:
             print('Agilent E3631 set P25V fails')
-    
+
     def queryP25VSetVoltage(self):
         try:
             # P25V is 2
@@ -312,7 +318,7 @@ class Agilent_E3631(VisaInstrument):
         except ValueError:
             print('Agilent E3631 query P25V fails')
         return float(val)
-    
+
     def setN25VSupply(self, x):
         # N25V is 3
         try:
@@ -321,7 +327,7 @@ class Agilent_E3631(VisaInstrument):
             self.instr.write(cmd)
         except ValueError:
             print('Agilent E3631 set N25V fails')
-    
+
     def queryN25VSetVoltage(self):
         # N25V is 3
         try:
@@ -330,6 +336,211 @@ class Agilent_E3631(VisaInstrument):
         except ValueError:
             print('Agilent E3631 query N25V fails')
         return float(val)
+
+
+class Keysight_E3649A(VisaInstrument):
+
+    def _get_outputOnOff(self):
+        """
+        query output state
+        :return: 0(OFF) or 1(ON)
+        """
+        try:
+            resp = self.instr.query('OUTP?')
+            self._outputOnOff = resp.rstrip()
+        except ValueError:
+            print('Agilent E3649A query outp on/off fails')
+        return self._outputOnOff
+
+    def _set_outputOnOff(self, x):
+        """
+        turn output on or off
+        :param x: either ON or OFF
+        :return: None
+        """
+        try:
+            self.instr.write('OUTP ' + str(x))
+        except ValueError:
+            print('Agilent E3649A write outp on/off fails')
+        self._outputOnOff = x
+
+    outputOnOff = property(_get_outputOnOff, _set_outputOnOff, "outputOnOff property")
+
+    def queryCurrent(self, output_num=None):
+        """
+        query current of selected output
+        :param output_num: (int) the output to query (None|1|2);
+            default value None uses the output previously set.
+        :return: (float) current
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            resp = self.instr.query('MEAS:CURR:DC?')
+            return float(resp)
+        except visa.VisaIOError or ValueError:
+            print('Agilent E3649A query current fails')
+
+    def setCurrent(self, curr, output_num=None):
+        """
+        query current of selected output
+        :param curr: (float) the desired current level
+        :param output_num: (int) the output to query (None|1|2);
+            default value None uses the output previously set.
+        :return: None
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            self.instr.write('CURR ' + str(curr))
+        except visa.VisaIOError or ValueError:
+            print('Agilent E3649A query current fails')
+
+    def queryVoltage(self, output_num=None):
+        """
+        query voltage of selected output
+        :param output_num: (int) the output to read (None|1|2);
+            default value None uses the output previously set.
+        :return: (float) voltage
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            resp = self.instr.query('MEAS:VOLT:DC?')
+            return float(resp)
+        except visa.VisaIOError or ValueError:
+            print('Agilent E3649A query voltage fails')
+
+    def setVoltage(self, volt, output_num=None):
+        """
+        set voltage of selected output
+        :param volt: (float) the desired voltage level
+        :param output_num: (int) the output to set (None|1|2);
+            default value None uses the output previously set.
+        :return: None
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            self.instr.write('VOLT ' + str(volt))
+        except visa.VisaIOError or ValueError:
+            print('Agilent E3649A set voltage fails')
+
+    def selectOutput(self, output_num):
+        """
+        select which output to modify
+        :param output_num: (int) the output to modify (1|2)
+        :return: None
+        """
+        try:
+            self.instr.write('INST:NSEL ' + str(output_num))
+        except visa.VisaIOError:
+            print('Agilent E3649A select output fails')
+
+    def queryOutputRange(self, output_num=None):
+        """
+        query range setting of selected output
+        :param output_num: (int) the output to read (None|1|2);
+            default value None uses the output previously set.
+        :return: (str) P35V or P60V
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            resp = self.instr.query(':VOLT:RANG?')
+            return resp
+        except visa.VisaIOError:
+            print('Agilent E3649A query output range fails')
+
+    def setOutputRange(self, volt_range, output_num=None):
+        """
+        set voltage range of selected output
+        :param volt_range: the voltage range to set output to (P35V|LOW|P60V|HIGH)
+        :param output_num: (int) the output to modify (None|1|2);
+            default value None uses the output previously set.
+        :return: None
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            self.instr.write(':VOLT:RANG ' + str(volt_range))
+        except visa.VisaIOError:
+            print('Agilent E3649A set output voltage fails')
+
+    def setOutputLow(self, output_num=None):
+        """
+        set voltage range of selected output to 35V
+        :param output_num: (int) the output to modify (None|1|2);
+            default value None uses the output previously set.
+        :return: None
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            self.instr.write(':VOLT:RANG LOW')
+        except visa.VisaIOError:
+            print('Agilent E3649A set output voltage LOW fails')
+
+    def setOutputHigh(self, output_num=None):
+        """
+        set voltage range of output to 60V
+        :param output_num: (int) the output to modify (None|1|2);
+            default value None uses the output previously set.
+        :return: None
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            self.instr.write(':VOLT:RANG HIGH')
+        except visa.VisaIOError:
+            print('Agilent E3649A set output voltage HIGH fails')
+
+    def enableVoltageProtection(self, enable=1, output_num=None):
+        """
+        enable or disable the overvoltage protection function.
+        :param enable: (0|1|OFF|ON)
+        :param output_num: output_num: (int) the output to modify (None|1|2);
+            default value None uses the output previously set.
+        :return: None
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            self.instr.write(':VOLT:PROT:STAT ' + str(enable))
+        except visa.VisaIOError:
+            print('Agilent E3649A enable voltage protection fails')
+
+    def setVoltageProtection(self, volt, output_num=None):
+        """
+        set the voltage level at which the overvoltage protection
+        (OVP) circuit will trip.
+        :param volt:  voltage level, 'MIN', or 'MAX'
+        :param output_num: (int) the output to modify (None|1|2);
+            default value None uses the output previously set.
+        :return: None
+        """
+        try:
+            if output_num:
+                self.instr.write('INST:NSEL ' + str(output_num))
+            self.instr.write(':VOLT:PROT ' + str(volt))
+        except visa.VisaIOError:
+            print('Agilent E3649A set output voltage protection fails')
+
+    def queryVoltageProtection(self, output_num=None):
+        """
+        query the protection state and voltage level at which the
+        overvoltage protection (OVP) circuit will trip.
+        :param output_num: (int) the output to modify (None|1|2);
+            default value None uses the output previously set.
+        :return: tuple (int, str) consisting of enable 0 (OFF) or 1 (ON)
+            and the voltage trip level.
+        """
+        try:
+            ena = self.instr.query('VOLT:PROT:STAT?')
+            level = self.instr.query('VOLT:PROT?')
+            return ena, level
+        except visa.VisaIOError:
+            print('Agilent E3649A query output voltage protection fails')
 
 
 class Agilent_33401(VisaInstrument):
