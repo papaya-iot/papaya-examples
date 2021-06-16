@@ -448,7 +448,7 @@ class Keysight_E3649A(VisaInstrument):
             if output_num:
                 self.instr.write('INST:NSEL ' + str(output_num))
             resp = self.instr.query(':VOLT:RANG?')
-            return resp
+            return resp.rstrip()
         except visa.VisaIOError:
             print('Agilent E3649A query output range fails')
 
@@ -538,7 +538,7 @@ class Keysight_E3649A(VisaInstrument):
         try:
             ena = self.instr.query('VOLT:PROT:STAT?')
             level = self.instr.query('VOLT:PROT?')
-            return ena, level
+            return ena.rstrip(), level.rstrip()
         except visa.VisaIOError:
             print('Agilent E3649A query output voltage protection fails')
 
