@@ -509,6 +509,434 @@ class Agilent_E3631(UartInstrument):
             print('Agilent E3631 query PS fails')
         return float(val)
 
+class Keithley_2510(UartInstrument):
+    def _check_error(self):
+        try:
+            resp = self.query("syst:err?")
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return resp
+    
+    def _get_temp(self):
+        try:
+            resp = self.query("meas:temp?")
+            self.get_temp = float(resp)
+        except ValueError:
+            print('Keithley 2510 get temp fails')
+        return self.get_temp
+
+    def _set_temp(self, x):
+        try:
+            cmd = 'sour:tmp ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        self.get_temp = x
+
+    temp = property(_get_temp, _set_temp, "temperature")
+
+    def _get_output(self):
+        try:
+            resp = self.query("output?")
+            self._get_output = float(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_output
+
+    def _set_output(self, x):
+        try:
+            cmd = ':output ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        self._get_output = x
+
+    output = property(_get_output, _set_output, "output")
+
+    def _get_protControl(self):
+        try:
+            resp = self.query("sour:temp:prot:state?")
+            self._get_protControl = int(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_protControl
+
+    def _set_protControl(self, x):
+        try:
+            cmd = "sour:temp:prot:state " + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        self._get_protControl = x
+
+    output = property(_get_protControl, _set_protControl, "Protection Control")
+    
+    def _get_protLow(self):
+        try:
+            resp = self.query("sour:temp:prot:low?")
+            self._get_protLow = float(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_protLow
+
+    def _set_protLow(self, x):
+        try:
+            cmd = ':sour:temp:prot:low ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 write fails')
+        self._get_protLow = x
+
+    protLow = property(_get_protLow, _set_protLow, "Protection Low")
+        
+    
+    def _get_protHigh(self):
+        try:
+            resp = self.query("sour:temp:prot:high?")
+            self._get_protHigh = float(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_protHigh
+
+    def _set_protHigh(self, x):
+        try:
+            cmd = ':sour:temp:prot:high ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 write fails')
+        self._get_protHigh = x
+
+    protHigh = property(_get_protHigh, _set_protHigh, "Protection High")
+
+    def _get_thermistorRange(self):
+        try:
+            resp = self.query("sens:temp:ther:range?")
+            self._get_thermistorRange = float(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_thermistorRange
+
+    def _set_thermistorRange(self, x):
+        try:
+            cmd = ':sens:temp:ther:range ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 write fails')
+        self._get_thermistorRange = x
+
+    thermistorRange = property(_get_thermistorRange, _set_thermistorRange, "Thermistor Range")
+
+    def _get_thermistorSourceCurrent(self):
+        try:
+            resp = self.query("sens:temp:curr?")
+            self._get_thermistorRange = float(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_thermistorSourceCurrent
+
+    def _set_thermistorSourceCurrent(self, x):
+        try:
+            cmd = ':sens:temp:curr ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 write fails')
+        self._get_thermistorSourceCurrent = x
+
+    thermistorSourceCurrent = property(_get_thermistorSourceCurrent, _set_thermistorSourceCurrent, "Thermistor Source Current")
+
+    def _get_fourWire(self):
+        try:
+            resp = self.query("syst:rsen?")
+            self._get_fourWire = bool(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_fourWire
+
+    def _set_fourWire(self, x):
+        try:
+            if (x): y = "1"
+            else: y = "0"
+            cmd = ':syst:rsen ' + y 
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        self._get_fourWire = x
+
+    fourWire = property(_get_fourWire, _set_fourWire, "four wire")
+
+    def _get_pidGain(self):
+        try:
+            resp = self.query("sour:temp:lcon?")
+            self._get_pidGain = float(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_pidGain
+
+    def _set_pidGain(self, x):
+        try:
+            cmd = ':sour:temp:lcon ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        self._get_pidGain = x
+
+    pidGain = property(_get_pidGain, _set_pidGain, "PID gain")
+
+    def _get_pidDerivative(self):
+        try:
+            resp = self.query("sour:temp:lcon:der?")
+            self._get_pidDerivative = float(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_pidDerivative
+
+    def _set_pidDerivative(self, x):
+        try:
+            cmd = ':sour:temp:lcon:der ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        self._get_pidDerivative = x
+
+    pidGain = property(_get_pidDerivative, _set_pidDerivative, "PID gain")
+
+    def _get_pidIntegral(self):
+        try:
+            resp = self.query("sour:temp:lcon:int?")
+            self._get_pidIntegral = float(resp)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        return self._get_pidIntegral
+
+    def _set_pidIntegral(self, x):
+        try:
+            cmd = ':sour:temp:lcon:int ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2510 query fails')
+        self._get_pidIntegral = x
+
+    pidGain = property(_get_pidIntegral, _set_pidIntegral, "PID gain")
+
+class Keithley_2400(UartInstrument):
+    def _check_error(self):
+        try:
+            resp = self.query("syst:err?")
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        return resp
+    
+    def _get_voltageSetpoint(self):
+        try:
+            resp = self.query("sour:volt:lev?")
+            self._get_voltageSetpoint = float(resp)
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        return self._get_voltageSetpoint
+
+    def _set_voltageSetPoint(self, x):
+        try:
+            cmd = ':sour:volt:lev ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        self._get_voltageSetpoint = x
+
+    def _get_currentCompliance_mA(self):
+        try:
+            currentCompliance = -99.0
+            currentCompliance= self.query("sens:curr:prot?")
+            self._get_currentCompliance_mA = float(currentCompliance)
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        return self._get_currentCompliance_mA
+
+    def _set_currentCompliance_mA(self, x):
+        try:
+            cmd = ':sens:curr:prot ' + str(x) + ' E-3'
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        self._get_currentCompliance_mA = x
+
+    def _get_voltageCompliance_mV(self):
+        try:
+            voltageCompliance = -99.0
+            voltageCompliance= self.query("sens:curr:prot?")
+            self._get_voltageCompliance_mV = float(voltageCompliance)
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        return self._get_voltageCompliance_mV
+
+    def _set_voltageCompliance_mV(self, x):
+        try:
+            cmd = ':sens:curr:prot ' + str(x) + ' E-3'
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        self._get_voltageCompliance_mV = x
+
+    def _get_outputIsOn(self):
+        try:
+            if (bool(self.query(':outp?'))):
+                self._get_outputIsOn = True
+            else:
+                self._get_outputIsOn = False
+        except ValueError:
+            print('Keithley 2400 query fails')
+        return self._get_outputIsOn
+    
+    def _set_outputIsOn(self, x):
+        try:
+            if (x): state = '1'
+            else:   state = '0'
+            self.write(':outp ' + state)
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        self._get_outputIsOn = state
+
+    def _get_fourWire(self):
+        try:
+            resp = self.query("syst:rsen?")
+            self._get_fourWire = float(resp)
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        return self._get_fourWire
+
+    def _set_fourWire(self, x):
+        try:
+            cmd = ':syst:rsen ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Keithley 2400 query fails')
+        self._get_fourWire = x
+    
+class Agilent_33401(UartInstrument):
+    def _check_error(self):
+        try:
+            resp = self.query("syst:err?")
+        except ValueError: 
+            print('Agilent_33401 query fails')
+        return resp
+    
+    def _get_acVoltage(self):
+        try:
+            resp = self.query("meas:volt:ac?")
+            self._get_acVoltage = float(resp)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        return self._get_acVoltage
+
+    def _set_acVoltage(self, x):
+        try:
+            cmd = ':meas:volt:ac ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        self._get_acVoltage = x
+    
+    def _get_acCurrent(self):
+        try:
+            resp = self.query("meas:curr:ac?")
+            self._get_acCurrent = float(resp)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        return self._get_acCurrent
+
+    def _set_acVoltage(self, x):
+        try:
+            cmd = ':meas:curr:ac ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        self._get_acCurrent = x
+    
+    def _get_dcVoltage(self):
+        try:
+            resp = self.query("meas:volt:dc?")
+            self._get_dcVoltage = float(resp)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        return self._get_dcVoltage
+
+    def _set_dcVoltage(self, x):
+        try:
+            cmd = ':meas:volt:dc ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        self._get_dcVoltage = x
+    
+    def _get_dcCurrent(self):
+        try:
+            resp = self.query("meas:curr:dc?")
+            self._get_dcCurrent = float(resp)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        return self._get_dcCurrent
+
+    def _set_dcCurrent(self, x):
+        try:
+            cmd = ':meas:curr:dc ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        self._get_dcCurrent = x
+    
+    def _get_twoWireRes(self):
+        try:
+            resp = self.query("meas:res?")
+            self._get_twoWireRes = float(resp)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        return self._get_twoWireRes
+
+    def _set_twoWireRes(self, x):
+        try:
+            cmd = ':meas:res ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        self._get_twoWireRes = x
+
+    def _get_fourWireRes(self):
+        try:
+            resp = self.query("meas:fres?")
+            self._get_fourWireRes = float(resp)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        return self._get_fourWireRes
+
+    def _set_fourWireRes(self, x):
+        try:
+            cmd = ':meas:fres ' + str(x)
+            self.write(cmd)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        self._get_fourWireRes = x
+
+    def _get_diode(self):
+        try:
+            resp = self.query("meas:diod?")
+            self._get_diode = float(resp)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        return self._get_diode
+    
+    def _get_dB(self):
+        try:
+            resp = self.query("calc:db:ref?")
+            self._get_dB = float(resp)
+        except ValueError: 
+            print('Agilent 33401 query fails')
+        return self._get_dB
+
+
+    
+
+    
+    
+    
 
 class Vex5Brain(UartInstrument):
     # This example demonstrates the Non-Standard or fractional UART
