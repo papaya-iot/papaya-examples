@@ -421,6 +421,15 @@ class MAX11311(SpiInstrument):
 
 if __name__ == '__main__':
     print('papaya spi demo')
+    
+# =============================================================================
+#     # controlling the chip select, can also be used as an output GPIO
+#     papaya_ip = "192.168.2.181"
+#     ss = SpiInstrument(papaya_ip)
+#     ss.set_config(csMode=0,csVal=0,clkDiv=12)
+#     ss.writeCS(1) # write 1 to chip select
+#     
+# =============================================================================
 # =============================================================================
 # Analog Devices AD5683R 16 bit DAC demo with Papaya GPIB Controller
 # https://www.mouser.com/datasheet/2/609/AD5683R_5682R_5681R_5683-1501713.pdf
